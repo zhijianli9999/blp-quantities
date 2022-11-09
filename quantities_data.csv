@@ -1,0 +1,7 @@
+firm,market,population,distance,q_j,q_jt,share
+a,brentwood,80,1.2,140,20,0.25
+a,inglewood,120,1.8,140,60,0.5
+a,westwood,100,1.1,140,60,0.6
+b,brentwood,80,0.3,160,60,0.75
+b,inglewood,120,1.1,160,60,0.5
+b,westwood,100,1.7,160,40,0.4
