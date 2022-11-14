@@ -5,6 +5,7 @@ module BLPmodule
     using DataFrames
     using DataFramesMeta
     using CSV
+    using Plots
 
     include("BLPmodule/build_data.jl")
     include("BLPmodule/solve.jl")

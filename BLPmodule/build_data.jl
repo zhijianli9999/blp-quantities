@@ -61,7 +61,7 @@ function draw_data(I::Int, J::Int, K::Int, rangeJ::Vector, varζ::Number, varX::
     return X_, ξ_, ζ_, w_, c_, j_
 end;
 
-function compute_mkt_eq(I::Int, J::Int, β::Vector, rangeJ::Vector, rangeB::Vector, varζ::Number, varX::Number, varξ::Number)::DataFrame
+function compute_mkt_eq(I::Int, J::Int, β::Vector, rangeJ::Vector, rangeB, varζ::Number, varX::Number, varξ::Number)::DataFrame
     """Compute equilibrium one market"""
 
     # Initialize variables
@@ -73,7 +73,11 @@ function compute_mkt_eq(I::Int, J::Int, β::Vector, rangeJ::Vector, rangeB::Vect
     s_, s0_ = demand(p_, X_, β, ξ_, ζ_)     # Demand with shocks
     pr_ = (p_ - c_) .* s_                       # Profits
     
-    B = rand(Uniform(rangeB[1], rangeB[2]), 1) # market size
+    if rangeB isa Number
+        B = rangeB
+    else
+        B = rand(Uniform(rangeB[1], rangeB[2]), 1) # market size
+    end
     q_, q0_ = B .* (s_, s0_)
 
     # Save to data
@@ -87,7 +91,7 @@ function compute_mkt_eq(I::Int, J::Int, β::Vector, rangeJ::Vector, rangeB::Vect
     return df
 end;
 
-function simulate_data(I::Int, J::Int, β::Vector, T::Int, rangeJ::Vector, rangeB::Vector, varζ::Number, varX::Number, varξ::Number)
+function simulate_data(I::Int, J::Int, β::Vector, T::Int, rangeJ::Vector, rangeB, varζ::Number, varX::Number, varξ::Number)
     """Simulate full dataset"""
     df = compute_mkt_eq(I, J, β, rangeJ, rangeB, varζ, varX, varξ)
     df[!, "t"] = ones(nrow(df)) * 1
@@ -99,6 +103,6 @@ function simulate_data(I::Int, J::Int, β::Vector, T::Int, rangeJ::Vector, range
     df = groupby(df, :j) # group by firm
     @transform!(df, :q_j = sum(:q)); # compute firm-level quantities
     df = transform!(df)
-    CSV.write("blp.csv", df)
+    # CSV.write("blp.csv", df)
     return df
 end;
