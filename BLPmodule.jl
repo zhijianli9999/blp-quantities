@@ -10,3 +10,4 @@ module BLPmodule
     include("BLPmodule/build_data.jl")
     include("BLPmodule/solve.jl")
 end
+
