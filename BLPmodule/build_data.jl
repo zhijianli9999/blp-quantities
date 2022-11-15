@@ -142,12 +142,12 @@ function build_dist_data(J::Int, β::Number, nT::Int, rangeB::Vector, varζ::Num
         append!(df, df_t)
     end
     df = groupby(df, :j) # group by firm
-    @transform!(df, :q_j = sum(:q)); # compute firm-level quantities
-    df = transform!(df)
-    df.agg_q0 .= sum(unique(df.q0))
-    df.total_B .= sum(unique(df.q_j)), df.agg_q0[1]
-    df.agg_shares .= df.q_j ./ df.total_B
-    df.agg_s0 .= df.agg_q0 ./ df.total_B
+    df = @transform(df, :q_j = sum(:q), :agg_q0 = sum(:q0), :total_B = sum(:B), :agg_s = sum(:q) ./ sum(:B), :agg_s0 = sum(:q0) ./ sum(:B))
+    # df = @transform(df, )
+    # df.agg_q0 .= sum(unique(df.q0))
+    # df.total_B .= sum(unique(df.q_j)), df.agg_q0[1]
+    # df.agg_shares .= df.q_j ./ df.total_B
+    # df.agg_s0 .= df.agg_q0 ./ df.total_B
     # TODO: check, use meta
     return df
 end;
