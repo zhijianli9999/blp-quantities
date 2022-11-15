@@ -76,7 +76,7 @@ function compute_mkt_eq(I::Int, J::Int, Î²::Vector, rangeJ::Vector, rangeB, varÎ
     if rangeB isa Number
         B = rangeB
     else
-        B = rand(Uniform(rangeB[1], rangeB[2]), 1) # market size
+        B = rand(rangeB[1]:rangeB[2], 1) # market size
     end
     q_, q0_ = B .* (s_, s0_)
 
