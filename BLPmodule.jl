@@ -1,5 +1,6 @@
 module BLPmodule
     using Optim
+    using Parameters
     using Distributions
     using Statistics
     using DataFrames
@@ -9,5 +10,7 @@ module BLPmodule
 
     include("BLPmodule/build_data.jl")
     include("BLPmodule/solve.jl")
+    include("BLPmodule/solve_simple.jl")
+    include("BLPmodule/structs.jl")
 end
 

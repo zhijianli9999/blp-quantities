@@ -135,19 +135,18 @@ function build_dist_data(J::Int, β::Number, nT::Int, rangeB::Vector, varζ::Num
     mkt_locs = rand(Uniform(0, 1), nT)
     dists = [[abs(locj - locm) for locj in fac_locs] for locm in mkt_locs]
     df = build_dist_mkt(β, rangeB, varζ, varξ, dist_thresh, dists[1])
-    df[!, "t"] = Int.(ones(nrow(df)) )
+    df[!, "t"] = Int.(ones(nrow(df)))
     for t=2:nT
         df_t = build_dist_mkt(β, rangeB, varζ, varξ, dist_thresh, dists[t])
         df_t[!, "t"] = Int.(ones(nrow(df_t)) * t)
         append!(df, df_t)
     end
+    df[!, "centrality"] = 
     df = groupby(df, :j) # group by firm
-    df = @transform(df, :q_j = sum(:q), :agg_q0 = sum(:q0), :total_B = sum(:B), :agg_s = sum(:q) ./ sum(:B), :agg_s0 = sum(:q0) ./ sum(:B))
-    # df = @transform(df, )
-    # df.agg_q0 .= sum(unique(df.q0))
-    # df.total_B .= sum(unique(df.q_j)), df.agg_q0[1]
-    # df.agg_shares .= df.q_j ./ df.total_B
-    # df.agg_s0 .= df.agg_q0 ./ df.total_B
-    # TODO: check, use meta
+    df = @transform(df, :agg_qj = sum(:q), :agg_q0 = sum(:q0), :agg_B = sum(:B), :agg_s = sum(:q) ./ sum(:B), :agg_s0 = sum(:q0) ./ sum(:B))
     return df
 end;
+
+# TODO: have a "market" object
+# TODO: have a "facility" object
+#       just have it point to its markets

@@ -1,73 +1,41 @@
 
 function implied_shares(Xt_::VecOrMat, ζt_::Matrix, δt_::Vector, δ0::Matrix)::Vector
     """Compute shares implied by deltas and shocks"""
-    # ζt_ .= 0 #testing out without random coefficients
+    ζt_ .= 0 #testing out without random coefficients
     u = [δt_ .+ (Xt_ * ζt_); δ0]                  # Utility
+    # println("u: ", u)
+    # println("size(u): ", size(u))
+
     e = exp.(u)                                 # Take exponential
     s = mean(e ./ sum(e, dims=1), dims=2)       # Compute demand
+    # println("size(s): ", size(s))
     return s[1:end-1]
 end;
 
 
 function inner_loop(st_::Vector, s0t_::Vector, Xt_::VecOrMat, ζt_::Matrix)::Vector
     """Solve the inner loop: compute delta, given the shares"""
-    # B = sum(st_) + s0t_[1]
-    # if B!=1 println(B) end
-    # println("B:", B)
-    # println("s0t_:", s0t_[1])
-    # println("st_:", st_)
     δt_ = ones(size(st_))
+    # println("δt_ ", δt_)
     δ0 = zeros(1, size(ζt_, 2))
-    δ_history1 = []
-    # δ_history2 = []
-    s_history = []
+    # println("δ0 ", δ0)
+    # println("δ0 size: ", size(δ0))
     dist = 1
     counter = 0
-    # Iterate until convergence
-    while (dist > 1e-8 && counter <= 100000)
+    while (dist > 1e-8 && counter <= 10000)
         s = implied_shares(Xt_, ζt_, δt_, δ0)
-        # q = B .* s #convert shares to quantities
-        # append!(s_history, s)
+        if mod(counter, 2000) == 1
+            # println("counter: ", counter)
+            # println("s: ", s)
+        end
+        s *= sum(st_)
         δt2_ = δt_ + log.(st_) - log.(s)
         dist = max(abs.(δt2_ - δt_)...)
         δt_ = δt2_
-        # append!(δ_history1, δt2_[1])
-        # append!(δ_history2, δt2_[2])
         counter+=1
     end
-    # p = Plots.plot(δ_history1)
-    # display(p)
-    # p = Plots.plot(δ_history2)
-    # display(p)
-    # p = Plots.plot(s_history)
-    # display(p)
+    println("final counter: ", counter)
     return δt_
-end;
-
-
-
-function loop(s_::Vector, s0_::Vector)::Vector
-    """Compute delta given shares"""
-    dist = 1
-    counter = 0
-    # Iterate until convergence
-    while (dist > 1e-8 && counter <= 100000)
-        s = implied_shares(Xt_, ζt_, δt_, δ0)
-        # q = B .* s #convert shares to quantities
-        # append!(s_history, s)
-        δt2_ = δt_ + log.(st_) - log.(s)
-        dist = max(abs.(δt2_ - δt_)...)
-        δt_ = δt2_
-        # append!(δ_history1, δt2_[1])
-        # append!(δ_history2, δt2_[2])
-        counter+=1
-    end
-
-    δt_ = ones(size(s_))
-    δ0 = zeros(1, size(s_, 2))
-    δ_ = inner_loop(s_, s0_, X_, ζ_)        # Solve inner loop
-    println("deltas:", δ_)
-    return δ_
 end;
 
 
@@ -97,6 +65,5 @@ function GMM(s_::Vector, s0_::Vector, X_::Matrix, Z_::Matrix, ζ_::Matrix, T::Ve
     δ_ = compute_delta(s_, s0_, X_, ζ_ * varζ_, T)   # Compute deltas
     ξ_, β_ = compute_xi(X_, IV_, δ_)            # Compute residuals
     gmm = ξ_' * Z_ * Z_' * ξ_ / length(ξ_)^2    # Compute ortogonality condition
-    # println(length(ξ_)^2)
     return gmm, β_
 end;
