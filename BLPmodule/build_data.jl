@@ -131,8 +131,9 @@ function build_dist_mkt(β::Number, rangeB::Vector, varζ::Number, varξ::Number
 end
 
 function build_dist_data(J::Int, β::Number, nT::Int, rangeB::Vector, varζ::Number, varξ::Number, dist_thresh::Number)
-    fac_locs = rand(Uniform(0, 1), J)
-    mkt_locs = rand(Uniform(0, 1), nT)
+    locdistrib = Uniform(0,1)
+    fac_locs = rand(locdistrib, J)
+    mkt_locs = rand(locdistrib, nT)
     dists = [[abs(locj - locm) for locj in fac_locs] for locm in mkt_locs]
     df = build_dist_mkt(β, rangeB, varζ, varξ, dist_thresh, dists[1])
     df[!, "t"] = Int.(ones(nrow(df)))
@@ -141,9 +142,8 @@ function build_dist_data(J::Int, β::Number, nT::Int, rangeB::Vector, varζ::Num
         df_t[!, "t"] = Int.(ones(nrow(df_t)) * t)
         append!(df, df_t)
     end
-    df[!, "centrality"] = 
     df = groupby(df, :j) # group by firm
-    df = @transform(df, :agg_qj = sum(:q), :agg_q0 = sum(:q0), :agg_B = sum(:B), :agg_s = sum(:q) ./ sum(:B), :agg_s0 = sum(:q0) ./ sum(:B))
+    df = @transform(df, :agg_qj = sum(:q), :agg_q0 = sum(:q0), :agg_B = sum(:B), :agg_s = sum(:q) ./ sum(:B), :agg_s0 = sum(:q0) ./ sum(:B), :mean_dist = mean(:dist))
     return df
 end;
 

@@ -1,7 +1,7 @@
 
 function implied_shares(Xt_::VecOrMat, ζt_::Matrix, δt_::Vector, δ0::Matrix)::Vector
     """Compute shares implied by deltas and shocks"""
-    ζt_ .= 0 #testing out without random coefficients
+    # ζt_ .= 0 #testing out without random coefficients
     u = [δt_ .+ (Xt_ * ζt_); δ0]                  # Utility
     # println("u: ", u)
     # println("size(u): ", size(u))
@@ -22,7 +22,7 @@ function inner_loop(st_::Vector, s0t_::Vector, Xt_::VecOrMat, ζt_::Matrix)::Vec
     # println("δ0 size: ", size(δ0))
     dist = 1
     counter = 0
-    while (dist > 1e-8 && counter <= 10000)
+    while (dist > 1e-8 && counter <= 100000)
         s = implied_shares(Xt_, ζt_, δt_, δ0)
         if mod(counter, 2000) == 1
             # println("counter: ", counter)
@@ -55,15 +55,19 @@ end;
 
 function compute_xi(X_::Matrix, IV_::Matrix, δ_::Vector)::Tuple
     """Compute residual, given delta (IV)"""
-    β_ = inv(IV_' * X_) * (IV_' * δ_)           # Compute coefficients (IV)
-    ξ_ = δ_ - X_ * β_                           # Compute errors
+    # Compute coefficients (IV)
+    β_ = inv(IV_' * X_) * (IV_' * δ_)           
+    # Compute errors
+    ξ_ = δ_ - X_ * β_                           
     return ξ_, β_
 end;
 
 function GMM(s_::Vector, s0_::Vector, X_::Matrix, Z_::Matrix, ζ_::Matrix, T::Vector, IV_::Matrix,  varζ_::Number)::Tuple
     """Compute GMM objective function"""
-    δ_ = compute_delta(s_, s0_, X_, ζ_ * varζ_, T)   # Compute deltas
-    ξ_, β_ = compute_xi(X_, IV_, δ_)            # Compute residuals
-    gmm = ξ_' * Z_ * Z_' * ξ_ / length(ξ_)^2    # Compute ortogonality condition
+    δ_ = compute_delta(s_, s0_, X_, ζ_ * varζ_, T) 
+    ξ_, β_ = compute_xi(X_, IV_, δ_)  
+    gmm = ξ_' * Z_ * Z_' * ξ_ / length(ξ_)^2 
     return gmm, β_
 end;
+
+

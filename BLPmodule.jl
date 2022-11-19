@@ -8,9 +8,9 @@ module BLPmodule
     using CSV
     using Plots
 
-    include("BLPmodule/build_data.jl")
+    # include("BLPmodule/build_data.jl")
     include("BLPmodule/solve.jl")
     include("BLPmodule/solve_simple.jl")
-    include("BLPmodule/structs.jl")
+    # include("BLPmodule/structs.jl")
 end
 
