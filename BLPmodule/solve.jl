@@ -1,73 +1,68 @@
 
-function implied_shares(Xt_::VecOrMat, ζt_::Matrix, δt_::Vector, δ0::Matrix)::Vector
-    """Compute shares implied by deltas and shocks"""
-    # ζt_ .= 0 #testing out without random coefficients
-    u = [δt_ .+ (Xt_ * ζt_); δ0]                  # Utility
-    # println("u: ", u)
-    # println("size(u): ", size(u))
-
-    e = exp.(u)                                 # Take exponential
-    s = mean(e ./ sum(e, dims=1), dims=2)       # Compute demand
-    # println("size(s): ", size(s))
+# BLP
+# implied_shares with random coefficients
+function shares(δ_, X, ζ, β)
+    # Utility
+    δ0 = zeros(1, size(ζ, 2))
+    u = [δ_ .+ (X * (ζ .* β)); δ0]
+    # println(mean(u))
+    e = exp.(u)
+    s = mean(e ./ sum(e, dims=1), dims=2)
+    # s = mean(e, dims=2)
+    
+    # println("size(e)", size(e))
+    # println("size(s)", size(s))
     return s[1:end-1]
-end;
-
-
-function inner_loop(st_::Vector, s0t_::Vector, Xt_::VecOrMat, ζt_::Matrix)::Vector
-    """Solve the inner loop: compute delta, given the shares"""
-    δt_ = ones(size(st_))
-    # println("δt_ ", δt_)
-    δ0 = zeros(1, size(ζt_, 2))
-    # println("δ0 ", δ0)
-    # println("δ0 size: ", size(δ0))
+end
+# compute deltas, with RCs
+function loop(s::Vector, X, ζ, β; verbose = false)::Vector
+    """Compute delta given shares"""
     dist = 1
     counter = 0
-    while (dist > 1e-8 && counter <= 100000)
-        s = implied_shares(Xt_, ζt_, δt_, δ0)
-        if mod(counter, 2000) == 1
-            # println("counter: ", counter)
-            # println("s: ", s)
-        end
-        s *= sum(st_)
-        δt2_ = δt_ + log.(st_) - log.(s)
-        dist = max(abs.(δt2_ - δt_)...)
-        δt_ = δt2_
+    δ_ = ones(size(s))
+    s_ = []
+    while (dist > 1e-12 && counter <= 1000)
+        s_ = shares(δ_, X, ζ, β)
+        δ2_ = δ_ + log.(s) - log.(s_)
+        # println("δ_: ", δ_, "\ns: ", s, "\nδ2_: ", δ2_)
+        dist = maximum(abs.(δ2_ - δ_))
+        # println("dist: ", dist)
+        # println("counter: ", counter)
+        δ_ = δ2_
+        # print(δ_[1:6])
+        # println("\n")
         counter+=1
     end
-    println("final counter: ", counter)
-    return δt_
-end;
-
-
-function compute_delta(s_::Vector, s0_::Vector, X_::Vector, ζ_::Matrix, T::Vector)::Vector
-    """Compute residuals"""
-    δ_ = zeros(size(T))
-    # Loop over each market
-    for t in unique(T)
-        st_ = s_[T.==t]                             # Share in market t
-        Xt_ = X_[T.==t]                           # Characteristics in mkt t
-        s0t_ = s0_[T.==t]                           # outside share in market t
-        δ_[T.==t] = inner_loop(st_, s0t_, Xt_, ζ_)        # Solve inner loop
+    if verbose
+        println("iterations: ", counter)
+        println("dist: ", dist)
+        println("deltas:", δ_[1:5])
+        println("s_:    ", s_[1:5])
     end
-    println("deltas:", δ_)
     return δ_
 end;
 
-function compute_xi(X_::Matrix, IV_::Matrix, δ_::Vector)::Tuple
-    """Compute residual, given delta (IV)"""
-    # Compute coefficients (IV)
-    β_ = inv(IV_' * X_) * (IV_' * δ_)           
-    # Compute errors
-    ξ_ = δ_ - X_ * β_                           
-    return ξ_, β_
-end;
 
-function GMM(s_::Vector, s0_::Vector, X_::Matrix, Z_::Matrix, ζ_::Matrix, T::Vector, IV_::Matrix,  varζ_::Number)::Tuple
-    """Compute GMM objective function"""
-    δ_ = compute_delta(s_, s0_, X_, ζ_ * varζ_, T) 
-    ξ_, β_ = compute_xi(X_, IV_, δ_)  
-    gmm = ξ_' * Z_ * Z_' * ξ_ / length(ξ_)^2 
-    return gmm, β_
-end;
+function grad(X, Z, Φ, δ)
+    return inv(X' * Z * inv(Φ) * Z' * X) *( X' * Z * inv(Φ) * Z' * δ)
+end
+
+
+function gmm(β, s, X, Z, ζ, Φ)
+    """X is distances, Z is the staffing measures"""
+    δ = loop(s, X, ζ, β)
+    # weighting matrix 
+        # Φ = Z' * ξ * ξ' * Z
+        # Φ = Z' * Z
+    b = grad(X, Z, Φ, δ)
+    # y2 is delta; theta_2 is 
+    ξ = δ - X * b 
+    obj = ξ' * Z * Φ * Z' * ξ
+
+    # println("β: ", β)
+    # println("b: ", b)
+    return obj
+end;    
+
 
 
