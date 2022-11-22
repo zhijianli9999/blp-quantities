@@ -2,26 +2,19 @@
 
 function shares(δ, D, ζ, β)
     δ0 = zeros(1, size(ζ, 2))
-    # println("size(δ0) = ", size(δ0))
-    # println("size(δj) = ", size(δj))
-    # println("size(Dj) = ", size(Dj))  #n_tracts, 2
-    # println("size(ζ) = ", size(ζ))
-    # println("size((ζ .* β)) = ", size((ζ .* β)))
-    # println("size(Dj * (ζ .* β)) = ", size(Dj * (ζ .* β)))
     u = [δ .+ (D * (ζ .* β)); δ0]
     e = exp.(u)
     s = mean(e ./ sum(e, dims=1), dims=2)
-
     return s[1:end-1]
-    # println("size(e)", size(e))
-    # println("size(s)", size(s))
 end
 
-function q(δ, D, M, ζ, β, J, J_set, T, T_set)
-    # J_set is a vector of facility IDs (unique)
+function compute_quantities(δ, D, M, ζ, β, J, T)
     # J is the column with facility IDs in the fac-tract dataframe 
+    J_set = unique(J)
+    T_set = unique(T)
 
-    s = zeros(length(M))
+    s = zeros(length(M)) # we have a share for each facility for each tract
+    # calculate the shares for each tract, store in the big s vector
     for i in eachindex(T_set)
         t = T_set[i] # market ID
         t_ind = T.==t # boolean. which rows of the dataframe is in this market 
@@ -29,51 +22,48 @@ function q(δ, D, M, ζ, β, J, J_set, T, T_set)
         Jset_selector = [(jj in Jset_in_t) for jj in J_set] #boolean to select this market's facilities in J_set
         δt = δ[Jset_selector]
         Dt = D[t_ind, :]
-        # println("length(δt) = ", length(δt))
-        # println("length(Dt) = ", length(Dt))
         s[t_ind] = shares(δt, Dt, ζ, β)
     end
 
-
-    q = zeros(length(J_set))
+    q_out = zeros(length(J_set))
+    # calculate the facility-level quantities implied by the big s vector (and the tract populations)
     for i in eachindex(J_set)
         j = J_set[i]
         j_ind_indf = J.==j
         sj = s[j_ind_indf]
         Mj = M[j_ind_indf]
-        q[i] = dot(sj, Mj)
+        q_out[i] = dot(sj, Mj)
     end
-    return q
+    return q_out
 end
 
 
-function compute_deltas(q_obs, D, M, ζ, β, J, J_set, T, T_set)::Vector
-    # q: observed quantity of the facility associated with that row of the big (fac-tract) dataframe
-    # ..._set: vector with one element per facility
-    
+function compute_deltas(q, D, M, ζ, β, J, T)
+    # Q has one entry per facility
+    J_set = unique(J)
+
     tol = 1e-12
     max_iter = 1000
 
     dist = 1
     counter = 0
     
+    # TODO: starting deltas = logit
     δ_  = ones(length(J_set))
     δ2_ = ones(length(J_set))
-
+    w_ = exp.(δ_)
     while (dist > tol && counter <= max_iter)
-        q_ = q(δ_, D, M, ζ, β, J, J_set, T, T_set)
-        # println("size(q) = ", size(q_))
-        δ2_ = δ_ + log.(q_obs) - log.(q_)
-        # println("δ_: ", δ_, "\ns: ", s, "\nδ2_: ", δ2_)
+        q_ = compute_quantities(δ_, D, M, ζ, β, J, T)
+        # TODO: the highlighted thing
+        w2_ = w_ * q / q_
+        w_ = w2_
+        # δ2_ = δ_ + log.(q) - log.(q_)
+        # δ_ = δ2_
         dist = maximum(abs.(δ2_ - δ_))
-        # println("dist: ", dist)
-        # println("counter: ", counter)
-        δ_ = δ2_
-        # print(δ_[1:6])
-        # println("\n")
         counter+=1
     end
     println("iterations: ", counter)
     println("dist: ", dist)
+    δ_ = log.(w_)
     return δ_
 end;
