@@ -9,11 +9,10 @@ module BLPmodule
     using Plots
     using LinearAlgebra
 
-    # include("BLPmodule/build_data.jl")
-    # include("BLPmodule/solve.jl")
-    include("BLPmodule/solve_m.jl")
-    # include("BLPmodule/solve_simple.jl")
     include("BLPmodule/structs.jl")
+    include("BLPmodule/make.jl")
+    # include("BLPmodule/solve_m.jl")
+    include("BLPmodule/solve_s.jl")
     # include("BLPmodule/gmm.jl")
 end
 

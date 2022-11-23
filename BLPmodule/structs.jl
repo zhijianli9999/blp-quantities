@@ -1,22 +1,27 @@
 
-
-Base.@kwdef mutable struct Firm
+@with_kw mutable struct Firm
     ID::String
-    quantity::Number
-    tracts::Vector{Int} 
-    X::VecOrMat{Float64}
-    D::VecOrMat{Float64}
-    δ::Float64 
+    q_obs::Number = 0
+    tracts::Vector{Int} = [0]
+    X::Matrix{Float64} = zeros(1,1)
+    D::VecOrMat{Float64} = [0.]
+    q_iter::Number = 0
+    δ::Float64 = 0.
 end
 
 
-Base.@kwdef mutable struct Tract
+@with_kw mutable struct Tract
     ID::Int
-    M::Number
-    firms::Vector{Firm}
-    D::VecOrMat{Float64}
-    shares::Vector{Float64}
+    M::Number = 0
+    firms::Vector{Firm} = []
+    D::VecOrMat{Float64} = [0.]
+    shares::Vector{Float64} = [0.]
+    quantities::Vector{Float64} = [0.]
+    n_firms::Int = 0 
+    exp_utils::Matrix{Float64} = ones(1,1) #will be nI by nfirms
+
     # exp_u::Vector{Float64}
+    # TODO: check lengths
 end
 
 
@@ -26,73 +31,19 @@ end
     
     # look into whether @unpack works with dot equals-allocated stuff. 
 
-
-Base.@kwdef mutable struct Economy
-    J_set::Vector{Firm}
-    T_set::Vector{Tract}
+@with_kw struct EconomyPars
+    K::Int = 0
+    nI::Int = 0
+    v::Matrix{Float64} = zeros(1,1)
+    β::Vector{Float64} = [0.]
+    σ::Vector{Float64} = [0.]
+    δ0::VecOrMat{Float64} = [0.]
 end
 
 
-function make_Economy(
-    J_IDs::Vector,
-    T_IDs::Vector,
-    X::VecOrMat{Float64},
-    D::VecOrMat{Float64},
-    Q::Vector,
-    M::Vector
-    )
-    """Outer constructor that takes in data to create Firm and Tract objects"""
-
-    # # check lengths
-    # l = [
-    #     length(J_IDs),
-    #     length(T_IDs),
-    #     size(X)[1],
-    #     size(D)[1],
-    #     length(Q),
-    # ]
-    # if !all(y->y==l[1], l)
-    #     error("wrong lengths!")
-    # end
-
-    J_set_IDs = unique(J_IDs)
-    J_set = []
-    T_set_IDs = unique(T_IDs)
-    T_set = []
-
-    # create firms 
-    for i in eachindex(J_set_IDs)
-        j = J_set_IDs[i]
-        j_selector = j .== J_IDs
-        push!(J_set, Firm(
-            ID = j,
-            quantity = Q[j_selector][1],
-            tracts = T_IDs[j_selector],
-            X = X[j_selector, :],
-            D = D[j_selector, :],
-            δ = 0
-        ))
-    end
-
-    # create tracts 
-    for i in eachindex(T_set_IDs)
-        t = T_set_IDs[i]
-        t_selector = t .== T_IDs
-        j_in_t = J_IDs[t_selector]
-        push!(T_set, Tract(
-            ID = t,
-            M = M[t_selector][1],
-            firms = [j for j in J_set if (j.ID in j_in_t)],
-            D = D[t_selector, :],
-            shares = ones(length(t_selector))
-        ))
-    end
-    
-    println("Economy with ", length(J_set), " firms and ", length(T_set), " tracts.")
-
-    return Economy(
-            J_set = J_set,
-            T_set = T_set
-        )
-
+@with_kw mutable struct Economy
+    firms::Vector{Firm}
+    tracts::Vector{Tract}
+    pars::EconomyPars
 end
+

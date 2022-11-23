@@ -1,20 +1,20 @@
 
 
-function shares(δ, D, ζ, β)
-    δ0 = zeros(1, size(ζ, 2))
+function shares(δ, D, v, β)
+    δ0 = zeros(1, size(v, 2))
     # TODO: don't write this in matrix form
     # [list comprehension .. for j] or for loop
 
     # u = [δ[j] + ...
     #     for j in eachindex(δ)]
-    u = [δ .+ (D * (ζ .+ β)); δ0]
+    u = [δ .+ (D * (v .+ β)); δ0]
     e = exp.(u)
     s = mean(e ./ sum(e, dims=1), dims=2)
     return s[1:end-1]
 end
 
 
-function compute_quantities(δ, D, M, ζ, β, J, T)
+function compute_quantities(δ, D, M, v, β, J, T)
     # J is the column with facility IDs in the fac-tract dataframe 
     # TODO: have structs to contain the data and the parameters. maybe also settings like tolerances
     # unique() is slow
@@ -31,7 +31,7 @@ function compute_quantities(δ, D, M, ζ, β, J, T)
         Jset_selector = [(jj in Jset_in_t) for jj in J_set] #boolean to select this market's facilities in J_set
         δt = δ[Jset_selector]
         Dt = D[t_ind, :]
-        s[t_ind] = shares(δt, Dt, ζ, β)
+        s[t_ind] = shares(δt, Dt, v, β)
     end
 
     q_out = zeros(length(J_set))
@@ -48,7 +48,7 @@ end
 
 
 function compute_deltas(
-        q, D, M, ζ, β, J, T; 
+        q, D, M, v, β, J, T; 
         initial_δ = [], 
         max_iter = 10000, 
         tol = 1e-9 # note that the magnitudes of δ are much larger than usual
@@ -59,7 +59,7 @@ Computes mean utilities given:
         (unique vector, 1 entry per firm, sorted by unique(J)),
     D: distances,
     M: Tract populations,
-    ζ: Random coef draws,
+    v: Random coef draws,
     β: non-linear parameters,
     J: Firm IDs (long form),
     T: Tract IDs (long form)
@@ -83,7 +83,7 @@ Computes mean utilities given:
     while (dist > tol && counter <= max_iter)
         # TODO: the w thing for computation
         # TODO: update_quantities!(q,...)
-        q_ = compute_quantities(δ_, D, M, ζ, β, J, T)
+        q_ = compute_quantities(δ_, D, M, v, β, J, T)
         # println(q_[1:6])
         δ2_ .= δ_ .+ log.(q ./ q_)
         dist = maximum(abs.(δ2_ - δ_))
@@ -92,7 +92,7 @@ Computes mean utilities given:
     end
 
     # report stats for the actual BLP with RCs (and not the logit initialization)
-    if any(ζ .!= 0.)
+    if any(v .!= 0.)
         println("iterations: ", counter)
         println("dist: ", dist)
     end
