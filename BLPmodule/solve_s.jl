@@ -1,47 +1,34 @@
 
-function update_shares!(t, pars)
-    δ0 = pars.δ0
-
-    old_quantities = deepcopy(t.quantities)
-    
-    for jj in 1:t.nfirms
-        j = t.firms[jj]
-        δj = j.δ
-        D_tj = t.D[1, :] # 1 by 2
-        coef = (pars.v .* pars.σ) .+ pars.β #K by nI
-        u_j = [dot(D_tj, coef[:, i]) .+ δj for i in 1:nI] #nI-element Vector 
-        t.exp_utils[:, jj] = u_j
+function update_q!(t, pars, δs)
+    for jj in 1:t.n_firms
+        #nI-element Vector
+        t.utils[:, jj] = [dot(t.D[jj, :], pars.nlcoefs[:, i]) .+ δs[t.inds][jj] for i in 1:pars.nI]
     end
 
-    t.exp_utils[:,(nfirms+1)] = δ0
-    t.exp_utils = exp.(t.exp_utils)
+    t.exp_utils = exp.(t.utils)
     t.shares = mean(t.exp_utils ./ sum(t.exp_utils, dims=2), dims=1)[1:end-1]
-    t.quantities = t.shares .* M
-    for jj in 1:t.nfirms
-        t.firms[jj].q_iter = t.firms[jj].q_iter - old_quantities[jj] + t.quantities[jj]
-    end
+    return t.shares .* t.M
 end
 
 
 function update_market!(
         tracts::Vector{Tract},
-        firms::Vector{Firm},
-        pars::EconomyPars
+        pars::EconomyPars,
+        δs::Matrix{Float64},
+        q_mat::Matrix{Float64}
     )
-
-    for t in tracts
-        update_shares!(t, pars)
+    for tt in 1:length(tracts)
+        q_mat[(tracts[tt].inds), tt] = update_q!(tracts[tt], pars, δs)
     end
-
-    return q_out
+    return q_mat
 end
 
 
 function compute_deltas(
     ec::Economy;
     initial_δ = [], 
-    max_iter = 10000, 
-    tol = 1e-9 # note that the magnitudes of δ are much larger than usual
+    max_iter = 1000, 
+    tol = 1e-5 
 )
 """
     Computes mean utilities given:
@@ -56,7 +43,7 @@ function compute_deltas(
 """
 # set initial deltas to be the logit estimate (still requires iteration)
 if length(initial_δ)==0
-    initial_δ = ones(length(ec.firms))
+    initial_δ = ones(size(ec.δs))
         # initial_δ = compute_deltas(
         #     ec; 
         #     initial_δ = [], 
@@ -74,24 +61,25 @@ end
 
 dist = 1
 counter = 0
-δ_  = initial_δ
-δ2_ = ones(length(δ_))
-q_iter = zeros(length(δ_))
 q_obs = [j.q_obs for j in ec.firms]
+δ_  = initial_δ
 
+q_iter = zeros(length(δ_))
 while (dist > tol && counter <= max_iter)
-    update_market!(ec.tracts, ec.firms, pars)
-    q_iter = [j.q_iter for j in ec.firms]
-    δ2_ .= δ_ .+ log.(q_obs ./ q_iter)
-    dist = maximum(abs.(δ2_ - δ_))
-    δ_ .= δ2_
+    update_market!(ec.tracts, ec.pars, δ_, ec.q_mat)
+
+    q_iter = sum(ec.q_mat, dims=2) #The matrix is nJ by nT. Sum across markets to aggregate quantities
+    ec.δs = δ_ .+ log.(q_obs ./ q_iter)
+    dist = maximum(abs.(ec.δs - δ_))
+    δ_ = ec.δs
     counter += 1
 end
-
+ec.δs = δ_
 # report stats for the actual BLP with RCs (and not the logit initialization)
-if any(v .!= 0.)
-    println("iterations: ", counter)
-    println("dist: ", dist)
-end
-return δ_
+# if any(ec.pars.v .!= 0.)
+@showln dist counter
+return ec.δs
+
+# end
+# return δ_
 end;

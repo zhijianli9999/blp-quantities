@@ -6,8 +6,8 @@ module BLPmodule
     using DataFrames
     using DataFramesMeta
     using CSV
-    using Plots
     using LinearAlgebra
+    using DebuggingUtilities
 
     include("BLPmodule/structs.jl")
     include("BLPmodule/make.jl")
