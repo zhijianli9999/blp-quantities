@@ -8,6 +8,7 @@ module BLPmodule
     using CSV
     using LinearAlgebra
     using DebuggingUtilities
+    using StaticArrays
 
     include("BLPmodule/structs.jl")
     include("BLPmodule/make.jl")

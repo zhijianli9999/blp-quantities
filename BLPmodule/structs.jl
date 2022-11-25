@@ -1,5 +1,5 @@
 
-@with_kw mutable struct Firm
+@with_kw struct Firm
     ID::String
     q_obs::Number = 0
     X::Matrix{Float64} = zeros(1,1)
@@ -7,7 +7,7 @@
 end
 
 
-@with_kw mutable struct Tract
+@with_kw struct Tract
     ID::Int
     M::Number = 0
     firmIDs::Vector = [0]

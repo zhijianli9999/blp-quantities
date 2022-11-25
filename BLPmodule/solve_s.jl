@@ -1,12 +1,16 @@
 
-function update_q!(t, pars, δs)
-    for jj in 1:t.n_firms
-        #nI-element Vector
-        t.utils[:, jj] = [dot(t.D[jj, :], pars.nlcoefs[:, i]) .+ δs[t.inds][jj] for i in 1:pars.nI]
-    end
 
-    t.exp_utils = exp.(t.utils)
-    t.shares = mean(t.exp_utils ./ sum(t.exp_utils, dims=2), dims=1)[1:end-1]
+
+function update_q!(t::Tract, δs::Matrix{Float64}, nlcoefs::Matrix{Float64}, nI::Int)::Vector{Float64}
+    for jj in 1:t.n_firms
+        δt::Float64 = δs[t.inds][jj]
+        Dt::Vector{Float64} = t.D[jj, :]
+        for ii in 1:nI
+            t.utils[ii, jj] = dot(Dt, nlcoefs[:, ii]) .+ δt
+        end
+    end
+    t.exp_utils::Matrix{Float64} .= exp.(t.utils)
+    t.shares::Vector{Float64} .= mean(t.exp_utils ./ sum(t.exp_utils, dims=2), dims=1)[1:end-1]
     return t.shares .* t.M
 end
 
@@ -16,9 +20,9 @@ function update_market!(
         pars::EconomyPars,
         δs::Matrix{Float64},
         q_mat::Matrix{Float64}
-    )
+    )::Matrix{Float64}
     for tt in 1:length(tracts)
-        q_mat[(tracts[tt].inds), tt] = update_q!(tracts[tt], pars, δs)
+        q_mat[(tracts[tt].inds), tt] .= update_q!(tracts[tt], δs, pars.nlcoefs, pars.nI)
     end
     return q_mat
 end
@@ -29,7 +33,7 @@ function compute_deltas(
     initial_δ = [], 
     max_iter = 1000, 
     tol = 1e-5 
-)
+)::Matrix{Float64}
 """
     Computes mean utilities given:
     q: firm-level quantities 

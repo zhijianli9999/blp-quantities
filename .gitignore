@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#for memory-allocation benchmarking
+*.mem 
+
+#julia serialization
+*.jls
