@@ -1,29 +1,32 @@
-
+# this is just for pasting into command line. 
 
 
 
 julia --track-allocation=user
-# using DataFrames, Serialization, LinearAlgebra, Parameters
-using Serialization, Profile, Revise;
+using Serialization, Profile;
+using ProfileView;
 
 string(@__DIR__) in LOAD_PATH || push!(LOAD_PATH, @__DIR__);
 using BLPmodule; const m = BLPmodule;
 
 ec = deserialize("ec.jls"); 
-m.compute_deltas(ec,max_iter=1)
+m.compute_deltas(ec,max_iter=1);
 
 Profile.clear_malloc_data()
 
 ec = deserialize("ec.jls"); 
-m.compute_deltas(ec,max_iter=10)
+# m.compute_deltas(ec,max_iter=10);
+ProfileView.@profview m.compute_deltas(ec,max_iter=10);
 
 exit()
 
 
 
 
---
+# @code_warntype m.compute_deltas(ec, max_iter=1000);
+# @code_warntype m.compute_deltas(ec, max_iter=1000);
 
+--
 
 
 julia 
@@ -36,13 +39,17 @@ exit()
 
 
 
+
+--
+
+
+find . -name '*.mem' -delete
+
+
+
+
+
+
+
 ---
 
-
-
-ec = deserialize("ec.jls"); 
-@time m.compute_deltas(ec,max_iter=1000)
-
-
-
-# m.compute_deltas(ec,max_iter=100)

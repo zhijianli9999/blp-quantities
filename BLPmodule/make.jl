@@ -9,18 +9,17 @@ function make_Economy(
     pars::EconomyPars
     )
     """Outer constructor that takes in data to create Firm and Tract objects"""
-    # initialize vectors of firms and tracts
+    # initialize vectors of firms 
     firm_IDs = String.(unique(firm_IDs_long))
     n_firms_ec = length(firm_IDs)
     firms = Array{Firm}(undef, n_firms_ec)
-    # # make a vector (firm) of vector (tract) of string to contain tract IDs
-    # firms_tractIDs = Vector{Vector{typeof(tract_IDs_long[1])}}(undef, n_firms_ec)
-    
+
+    @unpack K, nI, v, β, σ, nlcoefs = pars
     # create firms 
     for i in 1:n_firms_ec
         j = firm_IDs[i]
         j_selector = j .== firm_IDs_long
-        # firms_tractIDs[i] = tract_IDs_long[j_selector]
+        nt = length(j_selector) #number of tracts served by this firm
         firms[i] = Firm(
             ID = j, 
             q_obs = Q[j_selector][1], 
@@ -29,8 +28,9 @@ function make_Economy(
         )
     end
 
-    # create tracts (and fill in their firms)
+    # initialize vectors of tracts 
     tract_IDs = unique(tract_IDs_long)
+    n_tracts_ec = length(tract_IDs)
     tracts = Array{Tract}(undef, length(tract_IDs))
     for i in eachindex(tract_IDs)
         t = tract_IDs[i] #ID of the tract
@@ -40,27 +40,25 @@ function make_Economy(
         tracts[i] = Tract(
             ID = t, 
             M = M[t_selector][1], #market size. can just take the first one since all the same in df.
-            firms = [j for j in firms if in(j.ID, firms_in_t)],
             inds = [i for i in 1:n_firms_ec if in(firms[i].ID, firms_in_t)], # indices of this tract's firms among all firms
+            firms = [j for j in firms if in(j.ID, firms_in_t)],
             D = D[t_selector, :],
-            shares = ones(n_firms)./n_firms,
+            q = ones(n_firms), #quantity from this tract to the firms in this tract
             n_firms = n_firms,
-            utils = zeros(pars.nI, (n_firms+1)),
-            exp_utils = ones(pars.nI, (n_firms+1))
+            utils = zeros(n_firms, nI),
+            exputils = ones(n_firms, nI),
+            abδ = zeros(n_firms, nI)
         )
     end
 
-
     println("Economy with ", length(firms), " firms and ", length(tracts), " tracts.")
-
-    q_mat = zeros(n_firms_ec, length(tract_IDs))  # nJ by nT matrix to store iterated quantities
 
     return Economy(
             firms = firms,
             tracts = tracts,
             pars = pars,
             δs = zeros(n_firms_ec, 1),
-            q_mat = q_mat
+            q_mat = zeros(n_firms_ec, n_tracts_ec) # nJ by nT matrix to store iterated quantities
         )
 end
 
@@ -68,14 +66,15 @@ end
 function set_Pars(;K::Int, nI::Int, β::Vector{Float64})
     # K: number of non-linear characteristics, 
     # nI: number of draws
-    v = rand(Normal(0,1), K, nI)
+    v = randn(K, nI)
     σ = ones(K)
+    nlcoefs = (v .* σ) .+ β
     return EconomyPars(
-            K = K,
-            nI = nI,
-            v = v,
-            β = β,
-            σ = σ,
-            nlcoefs = (v .* σ) .+ β #K by nI
+            K,
+            nI,
+            v,
+            β,
+            σ,
+            nlcoefs #K, nI
         )
 end
