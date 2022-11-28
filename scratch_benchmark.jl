@@ -2,21 +2,27 @@
 
 
 
-julia --track-allocation=user
+find . -name '*.mem' -delete
+# julia --track-allocation=user
+julia --track-allocation=all
+# julia
 using Serialization, Profile;
-using ProfileView;
 
 string(@__DIR__) in LOAD_PATH || push!(LOAD_PATH, @__DIR__);
 using BLPmodule; const m = BLPmodule;
 
 ec = deserialize("ec.jls"); 
-m.compute_deltas(ec,max_iter=1);
-
-Profile.clear_malloc_data()
+m.compute_deltas(ec,max_iter=1, verbose=false)
 
 ec = deserialize("ec.jls"); 
-# m.compute_deltas(ec,max_iter=10);
-ProfileView.@profview m.compute_deltas(ec,max_iter=10);
+
+Profile.clear_malloc_data()
+m.compute_deltas(ec,max_iter=10, verbose=false)
+
+
+# ec = deserialize("ec.jls"); 
+# m.compute_deltas(ec,max_iter=1000, verbose=false)
+# ProfileView.@profview m.compute_deltas(ec,max_iter=10);
 
 exit()
 
@@ -30,26 +36,11 @@ exit()
 
 
 julia 
-using Coverage
+using Coverage, Profile
 analyze_malloc(".")
-
 exit()
 
 
 
 
-
-
---
-
-
-find . -name '*.mem' -delete
-
-
-
-
-
-
-
----
 

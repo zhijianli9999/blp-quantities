@@ -10,8 +10,7 @@ module BLPmodule
 
     include("BLPmodule/structs.jl")
     include("BLPmodule/make.jl")
-    # include("BLPmodule/solve_m.jl")
-    include("BLPmodule/solve_s.jl")
+    include("BLPmodule/solve.jl")
     # include("BLPmodule/gmm.jl")
 end
 

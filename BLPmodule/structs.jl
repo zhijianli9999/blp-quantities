@@ -9,15 +9,18 @@ end
 
 @with_kw struct Tract
     ID::Int
-    M::Number 
+    M::Float64 
     inds::Vector{Int} 
     firms::Vector{Firm} 
     D::Matrix{Float64}  #n_firms, K
-    q::Vector{Float64}
     n_firms::Int 
     utils::Matrix{Float64} # n_firms, nI
-    exputils::Matrix{Float64}  # n_firms, nI
+    expu::Matrix{Float64}  # n_firms, nI
+    denom::Matrix{Float64}  #(1, nI)
+    share_i::Matrix{Float64} #(n_firms, nI)
+    shares::Matrix{Float64} #(n_firms, 1)
     abδ::Matrix{Float64} 
+    q::Matrix{Float64}
 end
 
 

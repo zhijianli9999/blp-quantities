@@ -43,10 +43,13 @@ function make_Economy(
             inds = [i for i in 1:n_firms_ec if in(firms[i].ID, firms_in_t)], # indices of this tract's firms among all firms
             firms = [j for j in firms if in(j.ID, firms_in_t)],
             D = D[t_selector, :],
-            q = ones(n_firms), #quantity from this tract to the firms in this tract
+            q = ones(n_firms, 1), #quantity from this tract to the firms in this tract
             n_firms = n_firms,
             utils = zeros(n_firms, nI),
-            exputils = ones(n_firms, nI),
+            expu = ones(n_firms, nI),
+            denom = ones(1, nI),
+            share_i = ones(n_firms, nI),
+            shares = ones(n_firms, 1),
             abδ = zeros(n_firms, nI)
         )
     end
