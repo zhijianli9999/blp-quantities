@@ -6,7 +6,7 @@ function make_Economy(
     D::Matrix{Float64},
     Q::Vector,
     M::Vector,
-    pars::EconomyPars
+    nI::Int
     )
     """Outer constructor that takes in data to create Firm and Tract objects"""
     # initialize vectors of firms 
@@ -14,7 +14,7 @@ function make_Economy(
     n_firms_ec = length(firm_IDs)
     firms = Array{Firm}(undef, n_firms_ec)
 
-    @unpack K, nI, v, β, σ, nlcoefs = pars
+    # @unpack K, nI, v, β, σ = pars
     # create firms 
     for i in 1:n_firms_ec
         j = firm_IDs[i]
@@ -23,7 +23,7 @@ function make_Economy(
         firms[i] = Firm(
             ID = j, 
             q_obs = Q[j_selector][1], 
-            X = X[j_selector, :],
+            X = (X[j_selector, :])[1,:],
             D = D[j_selector, :]
         )
     end
@@ -55,29 +55,27 @@ function make_Economy(
     end
 
     println("Economy with ", length(firms), " firms and ", length(tracts), " tracts.")
-
+    
     return Economy(
             firms = firms,
             tracts = tracts,
-            pars = pars,
-            δs = zeros(n_firms_ec, 1),
-            q_mat = zeros(n_firms_ec, n_tracts_ec) # nJ by nT matrix to store iterated quantities
+            q_mat = zeros(n_firms_ec, n_tracts_ec), # nJ by nT matrix to store iterated quantities
+            q_obs = [j.q_obs for j in firms]
         )
 end
 
 
-function set_Pars(;K::Int, nI::Int, β::Vector{Float64})
-    # K: number of non-linear characteristics, 
+function set_Pars(; σ::Vector{Float64}, K::Int, nI::Int, δs::Matrix{Float64})
+    # K: number of non-linear characteristics
     # nI: number of draws
-    v = randn(K, nI)
-    σ = ones(K)
-    nlcoefs = (v .* σ) .+ β
+    lenσ = length(σ)
+    if lenσ != K error("Wrong length of σ. You gave $lenσ, should be $K.") end
+    v = randn(K, nI) #standard normal
     return EconomyPars(
             K,
             nI,
             v,
-            β,
             σ,
-            nlcoefs #K, nI
+            δs
         )
 end
