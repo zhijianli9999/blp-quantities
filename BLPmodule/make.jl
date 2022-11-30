@@ -59,7 +59,6 @@ function make_Economy(
     return Economy(
             firms = firms,
             tracts = tracts,
-            q_mat = zeros(n_firms_ec, n_tracts_ec), # nJ by nT matrix to store iterated quantities
             q_obs = [j.q_obs for j in firms]
         )
 end

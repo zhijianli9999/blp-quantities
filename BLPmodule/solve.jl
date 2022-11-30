@@ -33,26 +33,14 @@ function compute_deltas(
     tol = 1e-6,
     verbose = true
 )::Tuple{Matrix{Float64}, Matrix{Float64}}
-"""
-    Computes mean utilities given:
-    q: firm-level quantities 
-        (unique vector, 1 entry per firm, sorted by unique(J)),
-    D: distances,
-    M: Tract populations,
-    v: Random coef draws,
-    J: Firm IDs (long form),
-    T: Tract IDs (long form)
-"""
+
     # set initial deltas to be the logit estimate (still requires iteration)
-    @unpack tracts, firms, q_mat, q_obs = ec 
+    @unpack tracts, firms, q_obs = ec 
     #q_mat is the container matrix for iterated quantities
-    
+    q_mat = zeros(length(firms), length(tracts)) # nJ by nT matrix to store iterated quantities
     @unpack K, nI, v, σ, δs = pars
 
-    if length(initial_δ) <= 1
-        initial_δ = zeros(size(δs))
-    end
-
+    @showln K, nI, σ, δs[1:5]
     # set the part of the utilities unrelated to δ, i.e. [D] * [(v .* σ)]
     nlcoefs = v .* σ #K, nI
     Threads.@threads for t in tracts
@@ -62,6 +50,8 @@ function compute_deltas(
 
     dist = 1
     counter = 0
+    initial_δ = δs
+    @showln initial_δ[1:5]
     δ_ = initial_δ
     δ_mat = repeat(δ_, outer = [1, nI])
     q_iter = zeros(length(δ_))
@@ -69,7 +59,10 @@ function compute_deltas(
     while (dist > tol && counter <= max_iter)
         update_market!(tracts, δ_mat, q_mat)
         q_iter = sum(q_mat, dims=2) #The matrix is nJ by nT. Sum across markets to aggregate quantities
+        @showln q_obs[1:5]
+        @showln q_iter[1:5]
         δs .= δ_ .+ log.(q_obs ./ q_iter)
+        @showln δs[1:5] δ_[1:5]
         dist = maximum(abs.(δs - δ_))
         δ_ .= δs
         δ_mat = repeat(δ_, outer = [1, nI]) #more efficient to pass in δ in matrix form (n_firms_ec, nI)

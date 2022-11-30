@@ -36,6 +36,5 @@ end
 @with_kw struct Economy
     firms::Vector{Firm}
     tracts::Vector{Tract}
-    q_mat::Matrix{Float64} #nJ, nT
     q_obs::Vector{Float64} #nJ
 end
