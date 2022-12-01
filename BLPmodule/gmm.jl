@@ -8,28 +8,31 @@ function gmm_lm(
     tol=1e-8
     )::Float64
 
-    println("θ2 = ", θ2)
+    # println("θ2 = ", θ2)
     # pars.σ = θ2
     # @unpack nlcoefs, nI, K, β, δs, σ, v = pars
+    # @showln ec.tracts[1].shares
 
     δ, _ = compute_deltas(ec, pars, θ2, tol = tol, verbose = false)
     pars.δs = δ
-    # @showln "obj"
-    # @showln δ[1]
+    # @showln ec.tracts[1].shares
 
     θ1 = X \ δ
     # @showln θ1
     ω::Matrix{Float64} = δ .- (X * θ1)
     obj = reduce(+, (ω .^ 2)) #SSR
-    # @showln pars.σ
+
     # println("obj = ", obj)
     return obj
 end
 
 function compute_Dδ(ec::Economy, pars::EconomyPars)
     # TODO: cleanup and efficiency
+    
+    @showln ec.tracts[1].shares
     @unpack tracts, firms = ec
     @unpack nI, K, v = pars
+    println(tracts[1].shares[1])
     # @showln pars.σ
     M = reshape([t.M for t in ec.tracts], (1,length(tracts)))
     dsdδ = Vector{Matrix{Float64}}(undef, length(tracts))
@@ -68,9 +71,10 @@ function compute_Dδ(ec::Economy, pars::EconomyPars)
     for tt in eachindex(tracts)
         Dδ[tracts[tt].inds,:] .+= Dδₜ[tt]
     end
-    @showln Dδ[1,:]
+    # @showln Dδ[1,:]
     return Dδ    # Jx2
 end
+
 
 function gmm_grad(
     θ2::Vector{Float64},
@@ -80,30 +84,11 @@ function gmm_grad(
     )
 
     #Dδ: Jx2
-    #X: Jx2
-    #θ1: 2x1
-    
-    δ = pars.δs
-    Dδ = compute_Dδ(ec, pars)
-    θ1::Matrix{Float64} = inv(X' * X) * X' * δ
-    grad = 2 .* (Dδ' * δ - (Dδ' * (X * θ1))) #TODO: this is zero 
-    # @showln grad
-    return grad
-end
-
-
-function gmm_grad_alt(
-    θ2::Vector{Float64},
-    ec::Economy,
-    pars::EconomyPars,
-    X::Matrix{Float64} #df.x1, df.x2
-    )
-
-    #Dδ: Jx2
     #X:  Jx2
     #θ1: 2x1
-    pars.σ = θ2
+    
     δ = deepcopy(pars.δs)
+    # @showln ec.tracts[1].shares
 
     Dδ = compute_Dδ(ec, pars)
     θ1 = X \ δ
@@ -125,4 +110,22 @@ function gmm_grad_alt(
     println("grad = ", grad)
     return grad
 end
+
+
+function grad_diff(
+    θ2::Vector{Float64},
+    ec::Economy,
+    pars::EconomyPars,
+    X::Matrix{Float64}, #df.x1, df.x2
+    eps = 1e-5
+)
+
+    obj = gmm_lm(θ2, deepcopy(ec), deepcopy(pars), X)
+    obj1 = gmm_lm(θ2 .+ [eps,0.], deepcopy(ec), deepcopy(pars), X)
+    obj2 = gmm_lm(θ2 .+ [0.,eps], deepcopy(ec), deepcopy(pars), X)
+    return [obj1-obj, obj2-obj]./eps
+end
+    
+    
+
 

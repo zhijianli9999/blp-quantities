@@ -1,29 +1,28 @@
 
 function update_q!(t::Tract, δ_mat::Matrix{Float64})::Matrix{Float64}
-    @unpack utils, abδ, inds, M, expu, share_i, shares, q = t
-    pa .= exp.(abδ .+ view(δ_vec, inds))
-    # save the view(δ_vec, inds) in tracts 
-    # declare
-    denom = 1. .+ sum(pa, dims=1)
-    pa .= pa ./ denom 
+    @unpack utils, abδ, inds, M, expu, denom, share_i, shares, q = t
+    # @showln size(utils) size(abδ) size(δ_mat[inds, :])
+    # error("stop")
+    @views utils .= abδ .+ δ_mat[inds, :]
+    expu .= exp.(utils)
+    denom .= 1 .+ sum(expu, dims=1)
+    share_i .= expu ./ denom 
     shares .= mean(share_i, dims=2) 
-    qgh[threadid] .+= shares .* M
-    return nothing
+    q .= shares .* M
+    return q
 end
 
+
 function update_market!(
-        tracts::Vector{Tract},
-        δ_mat::Matrix{Float64},
-        q_mat::Matrix{Float64}
+    tracts::Vector{Tract},
+    δ_mat::Matrix{Float64},
+    q_mat::Matrix{Float64}
 )
-    Threads.@threads for tt in eachindex(tracts)
-    # for tt in eachindex(tracts)
-        # @views 
-        # pass in view(the tract's vector) in the thread's vector of vectors 
-        update_q!(tracts[tt], δ_mat)
-        q_mat[tracts[tt].inds, threadid] .+= tracts[tt].q
-    end
-    return nothing
+Threads.@threads for tt in eachindex(tracts)
+# for tt in eachindex(tracts)
+    @views q_mat[tracts[tt].inds, tt] = update_q!(tracts[tt], δ_mat)
+end
+return nothing
 end
 
 function compute_deltas(
@@ -52,7 +51,7 @@ function compute_deltas(
     dist = 1
     counter = 0
     δ_ = deepcopy(δs) #initial
-    # δ_mat = repeat(δ_, outer = [1, nI])
+    δ_mat = repeat(δ_, outer = [1, nI])
     # δ_vec 
     q_iter = zeros(length(δ_))
 
@@ -62,7 +61,8 @@ function compute_deltas(
         δs .= δ_ .+ log.(q_obs ./ q_iter)
         dist = maximum(abs.(δs - δ_))
         δ_ .= δs
-        δ_mat = repeat(δ_, outer = [1, nI]) #more efficient to pass in δ in matrix form (n_firms_ec, nI)
+        δ_mat = repeat(δ_, outer = [1, nI]) 
+        #more efficient to pass in δ in matrix form (n_firms_ec, nI)
         counter += 1
     end
     δs .= δ_
