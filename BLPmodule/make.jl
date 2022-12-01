@@ -1,15 +1,15 @@
 
 function make_Economy(
     firm_IDs_long,
-    tract_IDs_long::Vector,
-    X::Matrix{Float64},
-    D::Matrix{Float64},
-    Q::Vector,
-    M::Vector,
+    tract_IDs_long::AbstractArray{T},
+    X::AbstractArray{T},
+    D::AbstractArray{T},
+    Q::AbstractArray{T},
+    M::AbstractArray{T},
     nI::Int
-    )
+    ) where T<:Real
     """Outer constructor that takes in data to create Firm and Tract objects"""
-    # initialize vectors of firms 
+    # initialize AbstractArray{T}s of firms 
     firm_IDs = String.(unique(firm_IDs_long))
     n_firms_ec = length(firm_IDs)
     firms = Array{Firm}(undef, n_firms_ec)
@@ -28,13 +28,13 @@ function make_Economy(
         )
     end
 
-    # initialize vectors of tracts 
+    # initialize AbstractArray{T}s of tracts 
     tract_IDs = unique(tract_IDs_long)
     n_tracts_ec = length(tract_IDs)
     tracts = Array{Tract}(undef, length(tract_IDs))
     for i in eachindex(tract_IDs)
         t = tract_IDs[i] #ID of the tract
-        t_selector = t .== tract_IDs_long #bitvector - which rows in df belong to this tract
+        t_selector = t .== tract_IDs_long #bitAbstractArray{T} - which rows in df belong to this tract
         firms_in_t = firm_IDs_long[t_selector] # IDs of firms in tract
         n_firms = sum(t_selector) # number of firms in tract 
         tracts[i] = Tract(
@@ -50,7 +50,7 @@ function make_Economy(
             denom = ones(1, nI),
             share_i = ones(n_firms, nI),
             shares = ones(n_firms, 1),
-            abδ = zeros(n_firms, nI)
+            abδ = zeros(T, n_firms, nI)
         )
     end
 
@@ -64,7 +64,7 @@ function make_Economy(
 end
 
 
-function set_Pars(;K::Int, nI::Int, δs::Matrix{Float64})
+function set_Pars(;K::Int, nI::Int, δs::AbstractArray{T}) where T
     # K: number of non-linear characteristics
     # nI: number of draws
     v = randn(K, nI) #standard normal
