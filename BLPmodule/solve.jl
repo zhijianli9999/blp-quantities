@@ -1,15 +1,14 @@
 
 function update_q!(t::Tract, δ_mat::Matrix{Float64})::Matrix{Float64}
-    @unpack utils, abδ, inds, M, expu, denom, share_i, shares, q = t
-    # @showln size(utils) size(abδ) size(δ_mat[inds, :])
-    # error("stop")
-    @views utils .= abδ .+ δ_mat[inds, :]
-    expu .= exp.(utils)
-    denom .= 1 .+ sum(expu, dims=1)
-    share_i .= expu ./ denom 
+    @unpack utils, abδ, inds, M, expu, share_i, shares, q = t
+    pa .= exp.(abδ .+ view(δ_vec, inds))
+    # save the view(δ_vec, inds) in tracts 
+    # declare
+    denom = 1. .+ sum(pa, dims=1)
+    pa .= pa ./ denom 
     shares .= mean(share_i, dims=2) 
-    q .= shares .* M
-    return q
+    qgh[threadid] .+= shares .* M
+    return nothing
 end
 
 function update_market!(
@@ -19,16 +18,19 @@ function update_market!(
 )
     Threads.@threads for tt in eachindex(tracts)
     # for tt in eachindex(tracts)
-        @views q_mat[tracts[tt].inds, tt] = update_q!(tracts[tt], δ_mat)
+        # @views 
+        # pass in view(the tract's vector) in the thread's vector of vectors 
+        update_q!(tracts[tt], δ_mat)
+        q_mat[tracts[tt].inds, threadid] .+= tracts[tt].q
     end
     return nothing
 end
 
 function compute_deltas(
     ec::Economy,
-    pars::EconomyPars
+    pars::EconomyPars,
+    σ
     ;
-    initial_δ::Matrix{Float64} = zeros(0,0), 
     max_iter = 1000, 
     tol = 1e-6,
     verbose = true
@@ -38,9 +40,8 @@ function compute_deltas(
     @unpack tracts, firms, q_obs = ec 
     #q_mat is the container matrix for iterated quantities
     q_mat = zeros(length(firms), length(tracts)) # nJ by nT matrix to store iterated quantities
-    @unpack K, nI, v, σ, δs = pars
-
-    @showln K, nI, σ, δs[1:5]
+    @unpack K, nI, v, δs = pars
+    # println("σ = ", σ)
     # set the part of the utilities unrelated to δ, i.e. [D] * [(v .* σ)]
     nlcoefs = v .* σ #K, nI
     Threads.@threads for t in tracts
@@ -50,19 +51,15 @@ function compute_deltas(
 
     dist = 1
     counter = 0
-    initial_δ = δs
-    @showln initial_δ[1:5]
-    δ_ = initial_δ
-    δ_mat = repeat(δ_, outer = [1, nI])
+    δ_ = deepcopy(δs) #initial
+    # δ_mat = repeat(δ_, outer = [1, nI])
+    # δ_vec 
     q_iter = zeros(length(δ_))
 
     while (dist > tol && counter <= max_iter)
         update_market!(tracts, δ_mat, q_mat)
         q_iter = sum(q_mat, dims=2) #The matrix is nJ by nT. Sum across markets to aggregate quantities
-        @showln q_obs[1:5]
-        @showln q_iter[1:5]
         δs .= δ_ .+ log.(q_obs ./ q_iter)
-        @showln δs[1:5] δ_[1:5]
         dist = maximum(abs.(δs - δ_))
         δ_ .= δs
         δ_mat = repeat(δ_, outer = [1, nI]) #more efficient to pass in δ in matrix form (n_firms_ec, nI)

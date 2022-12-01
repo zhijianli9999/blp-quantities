@@ -1,26 +1,28 @@
 
 
 function gmm_lm(
-    θ2::Vector{Float64}, 
+    θ2, 
     ec::Economy,
     pars::EconomyPars,
-    X1::Matrix{Float64}, #df.x1, df.x2
+    X::Matrix{Float64}, #df.x1, df.x2
     tol=1e-8
     )::Float64
 
-    # @showln θ2
-    pars.σ = θ2
+    println("θ2 = ", θ2)
+    # pars.σ = θ2
     # @unpack nlcoefs, nI, K, β, δs, σ, v = pars
 
-    δ, _ = compute_deltas(ec, pars, initial_δ=pars.δs, tol = tol, verbose = false)
+    δ, _ = compute_deltas(ec, pars, θ2, tol = tol, verbose = false)
     pars.δs = δ
+    # @showln "obj"
+    # @showln δ[1]
 
-    θ1::Matrix{Float64} = inv(X1' * X1) * X1' * δ
+    θ1 = X \ δ
     # @showln θ1
-    ω::Matrix{Float64} = δ .- (X1 * θ1)
+    ω::Matrix{Float64} = δ .- (X * θ1)
     obj = reduce(+, (ω .^ 2)) #SSR
-    @showln obj
-    @showln pars.σ
+    # @showln pars.σ
+    # println("obj = ", obj)
     return obj
 end
 
@@ -28,7 +30,7 @@ function compute_Dδ(ec::Economy, pars::EconomyPars)
     # TODO: cleanup and efficiency
     @unpack tracts, firms = ec
     @unpack nI, K, v = pars
-    @showln pars.σ
+    # @showln pars.σ
     M = reshape([t.M for t in ec.tracts], (1,length(tracts)))
     dsdδ = Vector{Matrix{Float64}}(undef, length(tracts))
     for tt in eachindex(tracts)
@@ -52,7 +54,10 @@ function compute_Dδ(ec::Economy, pars::EconomyPars)
         dsdθ[tt] = Matrix{Float64}(undef, t.n_firms, K)
         for j in eachindex(t.firms)
             for k in 1:K
-                dsdθ[tt][j,k] = mean([v[k,i]*t.share_i[j,i]*(t.D[j,k] - reduce(+, [t.D[m,k]*t.share_i[m,i] for m in 1:t.n_firms])) for i in 1:nI])
+                dsdθ[tt][j,k] = 
+                mean(
+                    [v[k,i]*t.share_i[j,i] * (t.D[j,k] - reduce(+, [t.D[m,k]*t.share_i[m,i] for m in eachindex(t.firms)])) for i in 1:nI]
+                    )
             end
         end
     end
@@ -63,25 +68,26 @@ function compute_Dδ(ec::Economy, pars::EconomyPars)
     for tt in eachindex(tracts)
         Dδ[tracts[tt].inds,:] .+= Dδₜ[tt]
     end
-    return Dδ
+    @showln Dδ[1,:]
+    return Dδ    # Jx2
 end
 
 function gmm_grad(
     θ2::Vector{Float64},
     ec::Economy,
     pars::EconomyPars,
-    X1::Matrix{Float64} #df.x1, df.x2
+    X::Matrix{Float64} #df.x1, df.x2
     )
 
     #Dδ: Jx2
-    #X1: Jx2
+    #X: Jx2
     #θ1: 2x1
     
     δ = pars.δs
     Dδ = compute_Dδ(ec, pars)
-    θ1::Matrix{Float64} = inv(X1' * X1) * X1' * δ
-    grad = 2 .* (Dδ' * δ - (Dδ' * (X1 * θ1))) #TODO: this is zero
-    @showln grad
+    θ1::Matrix{Float64} = inv(X' * X) * X' * δ
+    grad = 2 .* (Dδ' * δ - (Dδ' * (X * θ1))) #TODO: this is zero 
+    # @showln grad
     return grad
 end
 
@@ -94,22 +100,29 @@ function gmm_grad_alt(
     )
 
     #Dδ: Jx2
-    #X: Jx2
+    #X:  Jx2
     #θ1: 2x1
-    
     pars.σ = θ2
-    δ = pars.δs
+    δ = deepcopy(pars.δs)
+
     Dδ = compute_Dδ(ec, pars)
-    θ1::Matrix{Float64} = inv(X' * X) * X' * δ
+    θ1 = X \ δ
     dθ1dθ2 = inv(X' * X) * (X' * Dδ) #K, K
     gradj = [Vector{Float64}(undef, 0) for _ in δ]
     for jj in eachindex(δ)
         xj = X[jj,:] #2-element Vector{Float64}
         δj = δ[jj,:] #1-element Vector{Float64}
-        Dδj = Dδ[jj,:]
-        gradj[jj] = (δj .* Dδj) .+ (dθ1dθ2 * (dot(xj,θ1) .* xj)) .- (dot(xj,θ1) .* Dδj .+ ((δj .* xj)' * dθ1dθ2)')
-        @showln gradj[jj]
+        Dδj = Dδ[jj,:] #2-element Vector{Float64}
+        gradj[jj] =
+            (δj .* Dδj) .+
+            (xj[1]^2 .* θ1[1] .* dθ1dθ2[1,:]) .+
+            (xj[2]^2 .* θ1[2] .* dθ1dθ2[2,:]) .+
+            (xj[1] .* xj[2] .* (dθ1dθ2[1,:] .* θ1[2] .+ (θ1[1] .* dθ1dθ2[2,:]))) .-
+            (xj[1] .* ((δj .* dθ1dθ2[1,:]) .+ (Dδj .* θ1[1]))) .-
+            (xj[2] .* ((δj .* dθ1dθ2[2,:]) .+ (Dδj .* θ1[2]))) 
     end
-    return 2 .* reduce(.+ , gradj)
+    grad = 2 .* reduce(.+ , gradj)
+    println("grad = ", grad)
+    return grad
 end
 

@@ -64,17 +64,14 @@ function make_Economy(
 end
 
 
-function set_Pars(; σ::Vector{Float64}, K::Int, nI::Int, δs::Matrix{Float64})
+function set_Pars(;K::Int, nI::Int, δs::Matrix{Float64})
     # K: number of non-linear characteristics
     # nI: number of draws
-    lenσ = length(σ)
-    if lenσ != K error("Wrong length of σ. You gave $lenσ, should be $K.") end
     v = randn(K, nI) #standard normal
     return EconomyPars(
             K,
             nI,
             v,
-            σ,
             δs
         )
 end

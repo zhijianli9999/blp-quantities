@@ -9,7 +9,7 @@ end
 
 @with_kw struct Tract
     ID::Int
-    M::Float64 
+    M::Float64
     inds::Vector{Int} 
     firms::Vector{Firm} 
     D::Matrix{Float64}  #n_firms, K
@@ -24,14 +24,14 @@ end
 end
 
 
-@with_kw struct EconomyPars
+@with_kw mutable struct EconomyPars
     K::Int
     nI::Int
     v::Matrix{Float64} #K, nI
-    σ::Vector{Float64} #K
     δs::Matrix{Float64} #n_firms_ec, 1
 end
 
+# σ #K
 
 @with_kw struct Economy
     firms::Vector{Firm}
