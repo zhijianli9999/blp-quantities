@@ -1,5 +1,5 @@
 
-function update_q!(t::Tract, δ_mat::AbstractArray{T})::AbstractArray{T} where T
+function update_q!(t::Tract, δ_mat::Matrix{Float64})::Matrix{Float64}
     @unpack utils, abδ, inds, M, expu, denom, share_i, shares, q = t
     # @showln size(utils) size(abδ) size(δ_mat[inds, :])
     # error("stop")
@@ -15,9 +15,9 @@ end
 
 function update_market!(
     tracts::Vector{Tract},
-    δ_mat::AbstractArray{T},
-    q_mat::AbstractArray{T}
-) where T
+    δ_mat::Matrix{Float64},
+    q_mat::Matrix{Float64}
+)
 Threads.@threads for tt in eachindex(tracts)
 # for tt in eachindex(tracts)
     @views q_mat[tracts[tt].inds, tt] = update_q!(tracts[tt], δ_mat)
@@ -33,18 +33,18 @@ function compute_deltas(
     max_iter = 1000, 
     tol = 1e-6,
     verbose = true
-) where T
+)::Tuple{Matrix{Float64}, Matrix{Float64}}
 
     # set initial deltas to be the logit estimate (still requires iteration)
     @unpack tracts, firms, q_obs = ec 
-    #q_mat is the container AbstractArray{T} where T for iterated quantities
-    q_mat = zeros(length(firms), length(tracts)) # nJ by nT AbstractArray{T} where T to store iterated quantities
+    #q_mat is the container matrix for iterated quantities
+    q_mat = zeros(length(firms), length(tracts)) # nJ by nT matrix to store iterated quantities
     @unpack K, nI, v, δs = pars
     # println("σ = ", σ)
     # set the part of the utilities unrelated to δ, i.e. [D] * [(v .* σ)]
     nlcoefs = v .* σ #K, nI
-    # Threads.@threads for t in tracts
-    for t in tracts
+    Threads.@threads for t in tracts
+    # for t in tracts
         t.abδ .= t.D * nlcoefs
     end
 
@@ -57,12 +57,12 @@ function compute_deltas(
 
     while (dist > tol && counter <= max_iter)
         update_market!(tracts, δ_mat, q_mat)
-        q_iter = sum(q_mat, dims=2) #The AbstractArray{T} where T is nJ by nT. Sum across markets to aggregate quantities
+        q_iter = sum(q_mat, dims=2) #The matrix is nJ by nT. Sum across markets to aggregate quantities
         δs .= δ_ .+ log.(q_obs ./ q_iter)
         dist = maximum(abs.(δs - δ_))
         δ_ .= δs
         δ_mat = repeat(δ_, outer = [1, nI]) 
-        #more efficient to pass in δ in AbstractArray{T} where T form (n_firms_ec, nI)
+        #more efficient to pass in δ in matrix form (n_firms_ec, nI)
         counter += 1
     end
     δs .= δ_

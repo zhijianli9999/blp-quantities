@@ -4,7 +4,7 @@ function gmm_lm(
     θ2, 
     ec::Economy,
     pars::EconomyPars,
-    X::Matrix, #df.x1, df.x2
+    X::Matrix{Float64}, #df.x1, df.x2
     tol=1e-8
     )::Float64
 
@@ -19,7 +19,7 @@ function gmm_lm(
 
     θ1 = X \ δ
     # @showln θ1
-    ω::Matrix = δ .- (X * θ1)
+    ω::Matrix{Float64} = δ .- (X * θ1)
     obj = reduce(+, (ω .^ 2)) #SSR
 
     # println("obj = ", obj)
