@@ -14,5 +14,6 @@ module BLPmodule
     include("BLPmodule/make.jl")
     include("BLPmodule/solve.jl")
     include("BLPmodule/gmm.jl")
+    include("BLPmodule/nlls.jl")
 end
 

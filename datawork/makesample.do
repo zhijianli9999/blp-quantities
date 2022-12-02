@@ -35,7 +35,7 @@ save $idir/fac_$auxstate.dta, replace
 
 
 use $idir/fac${testtag}.dta, clear //testing
-geonear facid lat lon using $idir/tract${testtag}.dta, n(tractid lat lon) long within(10)
+geonear facid lat lon using $idir/tract${testtag}.dta, n(tractid lat lon) long within(30)
 rename km_to_tractid dist
 
 gsort tractid facid

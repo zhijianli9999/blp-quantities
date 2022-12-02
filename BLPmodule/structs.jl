@@ -13,6 +13,7 @@ end
     inds::Vector{Int} 
     firms::Vector{Firm} 
     D::Matrix{Float64}  #n_firms, K
+    X::Matrix{Float64}  #n_firms, KX
     n_firms::Int 
     utils::Matrix{Float64} # n_firms, nI
     expu::Matrix{Float64}  # n_firms, nI

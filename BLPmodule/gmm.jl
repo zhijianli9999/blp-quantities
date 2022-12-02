@@ -18,6 +18,7 @@ function gmm_lm(
     # @showln ec.tracts[1].shares
 
     θ1 = X \ δ
+    # TODO: need Zs
     # @showln θ1
     ω::Matrix{Float64} = δ .- (X * θ1)
     obj = reduce(+, (ω .^ 2)) #SSR
@@ -32,7 +33,7 @@ function compute_Dδ(ec::Economy, pars::EconomyPars)
     @showln ec.tracts[1].shares
     @unpack tracts, firms = ec
     @unpack nI, K, v = pars
-    println(tracts[1].shares[1])
+    # println(tracts[1].shares[1])
     # @showln pars.σ
     M = reshape([t.M for t in ec.tracts], (1,length(tracts)))
     dsdδ = Vector{Matrix{Float64}}(undef, length(tracts))

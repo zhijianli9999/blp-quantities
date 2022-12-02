@@ -6,8 +6,8 @@ function update_q!(t::Tract, δ_mat::Matrix{Float64})::Matrix{Float64}
     @views utils .= abδ .+ δ_mat[inds, :]
     expu .= exp.(utils)
     denom .= 1 .+ sum(expu, dims=1)
-    share_i .= expu ./ denom 
-    shares .= mean(share_i, dims=2) 
+    share_i .= expu ./ denom
+    shares .= mean(share_i, dims=2)
     q .= shares .* M
     return q
 end

@@ -16,7 +16,7 @@ function make_Economy(
 
     # @unpack K, nI, v, β, σ = pars
     # create firms 
-    for i in 1:n_firms_ec
+    Threads.@threads for i in 1:n_firms_ec
         j = firm_IDs[i]
         j_selector = j .== firm_IDs_long
         nt = length(j_selector) #number of tracts served by this firm
@@ -32,7 +32,7 @@ function make_Economy(
     tract_IDs = unique(tract_IDs_long)
     n_tracts_ec = length(tract_IDs)
     tracts = Array{Tract}(undef, length(tract_IDs))
-    for i in eachindex(tract_IDs)
+    Threads.@threads for i in eachindex(tract_IDs)
         t = tract_IDs[i] #ID of the tract
         t_selector = t .== tract_IDs_long #bitvector - which rows in df belong to this tract
         firms_in_t = firm_IDs_long[t_selector] # IDs of firms in tract
@@ -43,6 +43,7 @@ function make_Economy(
             inds = [i for i in 1:n_firms_ec if in(firms[i].ID, firms_in_t)], # indices of this tract's firms among all firms
             firms = [j for j in firms if in(j.ID, firms_in_t)],
             D = D[t_selector, :],
+            X = X[t_selector, :],
             q = ones(n_firms, 1), #quantity from this tract to the firms in this tract
             n_firms = n_firms,
             utils = zeros(n_firms, nI),
