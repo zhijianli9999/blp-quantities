@@ -21,7 +21,7 @@ keep if year==2017
 rename (accpt_id latitude longitude) (facid lat lon)
 
 loc xvars dchrppd rnhrppd
-loc qvars avg_dailycensus restot paymcare
+loc qvars avg_dailycensus restot paymcare paymcaid
 drop if inlist(., avg_dailycensus, restot) //very few have missing so just dropping
 keep facid state county cz lat lon ///
 	occpct totbeds `xvars' `qvars'

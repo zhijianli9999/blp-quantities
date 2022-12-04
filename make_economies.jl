@@ -4,7 +4,7 @@ string(@__DIR__) in LOAD_PATH || push!(LOAD_PATH, @__DIR__)
 using BLPmodule; const m = BLPmodule;
 
 # test mode
-test1state = false
+test1state = true
 if test1state 
     dirpath = "/export/storage_adgandhi/MiscLi/factract/analysis"
 else
@@ -15,7 +15,6 @@ end;
 df = deserialize("$dirpath/df.jls");
 dropmissing!(df);
 
-# economy for BLP
 firm_IDs_long = df.j;
 tract_IDs_long = df.t;
 X = Matrix(df[!, [:x1, :x2]])
@@ -24,6 +23,8 @@ D = Matrix(df[!, [:d, :d2]])
 Q = df.q
 M = df.M;
 nJ = length(unique(firm_IDs_long));
+
+# economy for BLP
 nI = 100;
 σ = ones(size(D)[2]);
 pars = m.set_Pars(K = 2, nI = nI, δs=ones(nJ,1));
@@ -35,7 +36,6 @@ ec = m.make_Economy(
     X, Z, D, Q, M, nI
 );
 serialize("$dirpath/ec.jls", ec)
-
 
 
 # economy for NLLS 

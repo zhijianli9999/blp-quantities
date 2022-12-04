@@ -22,6 +22,10 @@ gen nres_mcare = paymcare / 100 * restot
 drop paymcare
 
 
+*** medicaid residents
+gen nres_mcaid = paymcaid / 100 * restot
+drop paymcaid
+
 sum mktpop, d
 
 // roughly tabulate total inside share
