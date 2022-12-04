@@ -3,6 +3,7 @@ function make_Economy(
     firm_IDs_long,
     tract_IDs_long::Vector,
     X::Matrix{Float64},
+    Z::Matrix{Float64},
     D::Matrix{Float64},
     Q::Vector,
     M::Vector,
@@ -24,6 +25,7 @@ function make_Economy(
             ID = j, 
             q_obs = Q[j_selector][1], 
             X = (X[j_selector, :])[1,:],
+            Z = (Z[j_selector, :])[1,:],
             D = D[j_selector, :]
         )
     end
@@ -44,6 +46,7 @@ function make_Economy(
             firms = [j for j in firms if in(j.ID, firms_in_t)],
             D = D[t_selector, :],
             X = X[t_selector, :],
+            Z = Z[t_selector, :],
             q = ones(n_firms, 1), #quantity from this tract to the firms in this tract
             n_firms = n_firms,
             utils = zeros(n_firms, nI),

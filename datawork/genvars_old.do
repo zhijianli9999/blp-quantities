@@ -46,6 +46,7 @@ foreach v of varlist `xvars'{
 
 
 gsort tractid
+compress
 
 save $adir/factract${testtag}.dta, replace
 use $adir/factract${testtag}.dta, clear
