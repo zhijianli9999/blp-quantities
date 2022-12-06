@@ -51,7 +51,9 @@ foreach v of varlist `xvars'{
 }
 
 
-gsort tractid facid year
+gsort tractid year facid
+egen tractyear = group(tractid year)
+
 save $adir/factract${testtag}.dta, replace
 export delim $adir/factract${testtag}, replace
 

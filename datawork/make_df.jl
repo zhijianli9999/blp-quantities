@@ -3,7 +3,7 @@ using DataFrames, DataFramesMeta, Revise, CSV, Serialization
 const datadir = "/export/storage_adgandhi/MiscLi/factract";
 
 # test mode
-test1state = true
+test1state = false
 if test1state 
     data = DataFrame(CSV.File("$datadir/analysis/factract_FL.csv"));
     dirpath = "/export/storage_adgandhi/MiscLi/factract/analysis"
@@ -18,12 +18,15 @@ savepath = ("$dirpath/df.jls");
 # This is the dataframe with every fac-tract combination within some dist threshold
 # println(names(data))
 df = @select(data, 
-    :t = :tractid, 
+    :t = :tractyear, 
+    :tract = :tractid, 
+    :year = :year, 
+    :state = :state, 
     :j = :facid, 
     :q = :restot,
     :avg_dailycensus,
     :nres_mcare,
-    :nres_nonmcare = :restot - :nres_mcare,
+    :nres_mcaid,
     :M = :mktpop,
     :d = :dist, 
     :d2 = :dist .^ 2,

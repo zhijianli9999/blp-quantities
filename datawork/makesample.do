@@ -55,7 +55,7 @@ levelsof year, loc(yrs)
 foreach yy of loc yrs{
 	use $idir/facloc.dta, clear
 	geonear facid lat lon using $idir/tract_`yy'.dta, n(tractid lat lon) long within(30)
-	rename km_to_tract dist
+	rename km_to_tractid dist
 	save "${idir}/geonear_`yy'.dta", replace
 }
 
