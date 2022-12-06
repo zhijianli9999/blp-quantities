@@ -1,47 +1,54 @@
+using JuMP, Ipopt
 
-function pred_q(θ::Vector, n_firms::Int, tracts::Vector{Tract})
-    # @showln θ
-    # θ should have X before D
-    KX = size(tracts[1].X)[2] 
-    θX = θ[1:KX]
-    θD = θ[(KX+1):end]
-    println(θX, θD)
-    q_vec = zeros(n_firms)
-    for tt in eachindex(tracts)
-        t = tracts[tt]
-        @unpack firms, n_firms, q, M, utils, inds, X, D, denom, shares = t
-        for jj in 1:n_firms
-            utils[jj,1] = reduce(+, X[jj,:] .* θX) + reduce(+, D[jj,:] .* θD)
-        end
-        utils .= exp.(utils)
-        # @showln sum(utils, dims=1)
-        denom .= 1 .+ sum(utils, dims=1)
-        shares .= utils ./ denom
-        q .= shares .* M
-        q_vec[inds] .+= vec(q)
-    end
-    # @showln q_vec
-    # error()
-    return q_vec
+function run_nlls(
+    X::Vector{Matrix{Float64}}, 
+    D::Vector{Matrix{Float64}}, 
+    tracts::Vector{Tract}, 
+    n_firms::Int, 
+    q_obs
+)
+
+    n_tracts = length(tracts);
+    M = [t.M for t in tracts]
+
+    # number of variables
+    nX::Int = size(X[1])[2]
+    nD::Int = size(D[1])[2]
+
+    model = Model(Ipopt.Optimizer)
+    @variables(model, begin
+        θx[1:nX]
+        θd[1:nD]
+    end)
+
+    j_indexer, t_indexer, positionin = create_indices(tracts, n_firms)
+
+    u = @NLexpression(model,
+        [tt in 1:n_tracts, jj in j_indexer[tt]],
+        sum(θx[ix] * X[tt][positionin[jj,tt],ix] for ix in 1:nX) + sum(θd[id] * D[tt][positionin[jj,tt],id] for id in 1:nD))
+
+    expu = @NLexpression(model,
+        [tt in 1:n_tracts, jj in j_indexer[tt]],
+        exp(u[tt,jj]))
+
+    denom = @NLexpression(model,
+        [tt in 1:n_tracts],
+        1+ sum(expu[tt,jj] for jj in j_indexer[tt]))
+
+    share = @NLexpression(model,
+        [tt in 1:n_tracts, jj in j_indexer[tt]],
+        expu[tt,jj] / denom[tt])
+
+    mktq = @NLexpression(model,
+        [tt in 1:n_tracts, jj in j_indexer[tt]],
+        M[tt] * share[tt,jj])
+
+    firmq = @NLexpression(model,
+        [jj in 1:n_firms],
+        sum(mktq[tt, jj] for tt in t_indexer[jj]))
+
+    @NLobjective(model, Min, sum((firmq[jj] - q_obs[jj])^2 for jj in 1:n_firms))
+    optimize!(model)
+    
+    return value.(θx), value.(θd), value.(share), value.(mktq), value.(firmq)
 end
-
-
-function nlls_obj(θ2, n_firms, tracts, q_obs)
-    q_pred = pred_q(θ2, n_firms, tracts)
-    obj = reduce(+, (q_obs .- q_pred).^2)
-    return obj
-end
-
-function predqt(
-    θ, 
-    X,
-    M
-    )
-    nJ = size(X)[1]
-    utils .= exp.([dot(X[jj,:], θ) for jj in 1:nJ])
-    shares .= utils ./ (1 .+ sum(utils, dims=1))
-    q .= shares .* M
-
-end
-
-

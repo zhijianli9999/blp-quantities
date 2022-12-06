@@ -1,5 +1,7 @@
-use $idir/sample_novars${testtag}.dta, clear
+cap log close 
+log using $datadir/logs/genvars_old.log, replace
 
+use $idir/sample_novars${testtag}.dta, clear
 
 ***
 //scale factor - fraction of elderly population considered to be in market
@@ -7,12 +9,12 @@ use $idir/sample_novars${testtag}.dta, clear
 // or 0.2 if tract has high residents:population ratio - avoid estimation issues
 
 
-bys facid: egen pop65_j = total(pop65plus_int) //population>65 in tracts near j
+bys facid year: egen pop65_j = total(pop65plus_int) //population>65 in tracts near j
 gen ratio_occpop = restot / pop65_j
 sum ratio_occpop, d
 gen aux_highnhratio = ratio_occpop > `r(p95)'
 gen fracpop_inmkt = 0.1
-bys tractid: egen aux_boosttractpop = max(aux_highnhratio)
+bys tractid year: egen aux_boosttractpop = max(aux_highnhratio)
 replace fracpop_inmkt = 0.2 if aux_boosttractpop == 1
 drop aux_* ratio_occpop
 gen mktpop = fracpop_inmkt * pop65plus_int
@@ -30,12 +32,12 @@ sum mktpop, d
 
 // roughly tabulate total inside share
 preserve 
-collapse (first) mktpop fracpop_inmkt, by(tractid)
+collapse (first) mktpop fracpop_inmkt, by(tractid year)
 tabstat mktpop, stat(sum)
 sum fracpop_inmkt, d 
 restore 
 preserve 
-collapse (first) restot, by(facid)
+collapse (first) restot, by(facid year)
 tabstat restot, stat(sum)
 restore
 
@@ -44,14 +46,13 @@ restore
 // neighbors' staffing as IV
 loc xvars dchrppd rnhrppd
 foreach v of varlist `xvars'{
-	bys tractid: egen nbr_`v' = total(`v')
+	bys tractid year: egen nbr_`v' = total(`v')
 	replace nbr_`v' = nbr_`v' - `v'
 }
 
 
-gsort tractid
-compress
-
+gsort tractid facid year
 save $adir/factract${testtag}.dta, replace
-use $adir/factract${testtag}.dta, clear
 export delim $adir/factract${testtag}, replace
+
+cap log close

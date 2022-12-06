@@ -5,13 +5,10 @@ gl adir = "$datadir/analysis"
 gl codedir = "/mnt/staff/zhli/blp-quantities"
 
 ///// testing
-gl testmode = 1 //edit this
-
-gl auxstate = "FL" //pick one state to test 
-
-gl testtag ""
-if "$testmode"=="1"{
-	gl testtag "_${auxstate}"
+gl testmode = 0 //edit this
+gl testtag
+if ${testmode}==1{
+	gl testtag = "_FL"
 }
 
 do ${codedir}/datawork/makesample.do

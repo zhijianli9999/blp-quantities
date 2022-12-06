@@ -79,3 +79,22 @@ function set_Pars(;K::Int, nI::Int, δs::Matrix{Float64})
             δs
         )
 end
+
+function create_indices(tracts, n_firms)
+    # create some indices 
+    j_indexer = [t.inds for t in tracts]
+
+    # t_indexer[jj] is the vector of markets (i.e. their indices) served by facility jj
+    t_indexer = [Int[] for _ in 1:n_firms]
+    for tt in eachindex(tracts), ind in tracts[tt].inds
+            push!(t_indexer[ind], tt)
+    end
+
+    # positionin[jj,tt] is firm jj's position in tract tt's vectors (e.g. the vector of market shares in tt)
+    positionin = Matrix(undef, n_firms, length(tracts))
+    for jj in 1:n_firms, tt in t_indexer[jj]
+            positionin[jj,tt] = findall(x->x == jj, j_indexer[tt])[1]
+    end
+
+    return j_indexer, t_indexer, positionin
+end

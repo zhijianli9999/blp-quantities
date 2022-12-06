@@ -1,6 +1,7 @@
+cap log close 
+log using $datadir/logs/genvars.log, replace
 
 use $idir/sample_novars${testtag}.dta, clear
-
 
 ***
 //scale factor - fraction of elderly population considered to be in market
@@ -76,3 +77,4 @@ foreach v of varlist `xvars'{
 save $adir/factract${testtag}.dta, replace
 use $adir/factract${testtag}.dta, clear
 export delim $adir/factract${testtag}, replace
+cap log close

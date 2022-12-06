@@ -15,5 +15,6 @@ module BLPmodule
     include("BLPmodule/solve.jl")
     include("BLPmodule/gmm.jl")
     include("BLPmodule/nlls.jl")
+    include("BLPmodule/elasticity.jl")
 end
 
