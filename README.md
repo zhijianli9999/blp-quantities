@@ -1,8 +1,11 @@
-# blp-quantities
-Testing if BLP algorithm works with just firm-level aggregate shares data instead of market shares.
+1) Data work: 
+   - Stata code: produce data at the facility-tract level (within distance threshold)
+   - `make_df.jl`: make Julia `DataFrame`
 
-Sources:
- - [Matteo Courthoud's BLP tutorial](https://matteocourthoud.github.io/course/empirical-io/12_blp_1995/)
+2) `make_economies.jl`: create `Economy` object
 
-References:
- - [Mark Ponder's example code](https://github.com/ponde006/BLP_Code)
+3)
+   - `nlls.ipynb`: Non-linear least squares
+   - `gmm.ipynb`: BLP
+
+
