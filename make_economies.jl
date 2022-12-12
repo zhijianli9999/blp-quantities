@@ -6,14 +6,36 @@ using BLPmodule; const m = BLPmodule;
 # test mode
 test1state = true
 if test1state 
+    data = DataFrame(CSV.File("$datadir/analysis/factract_FL.csv"));
     dirpath = "/export/storage_adgandhi/MiscLi/factract/analysis"
 else
+    data = DataFrame(CSV.File("$datadir/analysis/factract.csv"));
     dirpath = "jls"
 end;
 
 # Get dataframe made in make_df.jl
-df = deserialize("$dirpath/df.jls");
+df = @select(data, 
+    :t = :tractyear, 
+    :tract = :tractid, 
+    :year = :year, 
+    :state = :state, 
+    :j = :facid, 
+    :q = :restot,
+    :avg_dailycensus,
+    :nres_mcare,
+    :nres_mcaid,
+    :M = :mktpop,
+    :d = :dist, 
+    :d2 = :dist .^ 2,
+    :x1 = :dchrppd,
+    :x2 = :rnhrppd,
+    :z1 = :nbr_dchrppd,
+    :z2 = :nbr_rnhrppd,
+);
+
 dropmissing!(df);
+sort!(df, :j);
+
 
 firm_IDs_long = df.j;
 tract_IDs_long = df.t;
