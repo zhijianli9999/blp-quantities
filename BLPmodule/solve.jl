@@ -4,10 +4,24 @@ function update_q!(t::Tract, δ_mat::Matrix{Float64})::Matrix{Float64}
     # @showln size(utils) size(abδ) size(δ_mat[inds, :])
     # error("stop")
     @views utils .= abδ .+ δ_mat[inds, :]
+    util_reduction = max(maximum(utils), 0.)
+    utils .-= util_reduction
+
+
+    # @showln maximum(utils)
+    # @showln minimum(utils)
     expu .= exp.(utils)
-    denom .= 1 .+ sum(expu, dims=1)
+    if any(isinf.(expu)) error("inf expu") end
+    scale = exp(-util_reduction)
+    denom .=  sum(expu, dims=1) .+ scale
+    if any(isnan.(denom)) error("nan denom") end
+    if isapprox(denom[1],0.) 
+        @showln util_reduction scale sum(expu, dims=1)
+        error("nan denom zero") 
+    end
     share_i .= expu ./ denom
     shares .= mean(share_i, dims=2)
+    if any(isnan.(shares)) error("nan shares") end
     q .= shares .* M
     return q
 end
@@ -40,11 +54,12 @@ function compute_deltas(
     #q_mat is the container matrix for iterated quantities
     q_mat = zeros(length(firms), length(tracts)) # nJ by nT matrix to store iterated quantities
     @unpack K, nI, v, δs = pars
+    # @showln δs
     # println("σ = ", σ)
     # set the part of the utilities unrelated to δ, i.e. [D] * [(v .* σ)]
     nlcoefs = v .* σ #K, nI
-    Threads.@threads for t in tracts
-    # for t in tracts
+    # Threads.@threads for t in tracts
+    for t in tracts
         t.abδ .= t.D * nlcoefs
     end
 

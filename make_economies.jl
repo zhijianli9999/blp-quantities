@@ -1,16 +1,20 @@
-using DataFrames, LinearAlgebra, Distributions, Revise, Serialization, DebuggingUtilities
+using DataFrames, DataFramesMeta, LinearAlgebra, Distributions, Revise, Serialization, DebuggingUtilities, CSV
 
 string(@__DIR__) in LOAD_PATH || push!(LOAD_PATH, @__DIR__)
 using BLPmodule; const m = BLPmodule;
+const datadir = "/export/storage_adgandhi/MiscLi/factract";
 
-# test mode
-test1state = true
-if test1state 
-    data = DataFrame(CSV.File("$datadir/analysis/factract_FL.csv"));
-    dirpath = "/export/storage_adgandhi/MiscLi/factract/analysis"
-else
+testmodes = ["full", "fl", "fl17"]
+testmode = testmodes[3]################# EDIT THIS ##################
+
+if testmode=="full"
     data = DataFrame(CSV.File("$datadir/analysis/factract.csv"));
-    dirpath = "jls"
+elseif testmode=="fl"
+    data = DataFrame(CSV.File("$datadir/analysis/factract_FL.csv"));
+elseif testmode=="fl17"
+    data = DataFrame(CSV.File("$datadir/analysis/factract_FL17.csv"));
+else
+    error("testmode")
 end;
 
 # Get dataframe made in make_df.jl
@@ -25,8 +29,8 @@ df = @select(data,
     :nres_mcare,
     :nres_mcaid,
     :M = :mktpop,
-    :d = :dist, 
-    :d2 = :dist .^ 2,
+    :d = :dist ./ 1.60934, 
+    :d2 = (:dist ./1.60934) .^ 2,
     :x1 = :dchrppd,
     :x2 = :rnhrppd,
     :z1 = :nbr_dchrppd,
@@ -57,7 +61,7 @@ ec = m.make_Economy(
     tract_IDs_long,
     X, Z, D, Q, M, nI
 );
-serialize("$dirpath/ec.jls", ec)
+serialize("$datadir/analysis/ec$testmode.jls", ec)
 
 
 # economy for NLLS 
@@ -66,4 +70,4 @@ ec = m.make_Economy(
     tract_IDs_long,
     X, Z, D, Q, M, 1
     );
-serialize("$dirpath/ec_nlls.jls", ec)
+serialize("$datadir/analysis/ec_nlls$testmode.jls", ec)

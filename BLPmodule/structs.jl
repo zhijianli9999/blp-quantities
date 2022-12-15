@@ -12,7 +12,7 @@ end
     ID::Int
     M::Float64
     inds::Vector{Int} 
-    firms::Vector{Firm} 
+    # firms::Vector{Firm} 
     D::Matrix{Float64}  #n_firms, KD
     X::Matrix{Float64}  #n_firms, KX
     Z::Matrix{Float64}  #n_firms, KZ

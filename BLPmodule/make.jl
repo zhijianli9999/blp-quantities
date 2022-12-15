@@ -43,7 +43,7 @@ function make_Economy(
             ID = t, 
             M = M[t_selector][1], #market size. can just take the first one since all the same in df.
             inds = [i for i in 1:n_firms_ec if in(firms[i].ID, firms_in_t)], # indices of this tract's firms among all firms
-            firms = [j for j in firms if in(j.ID, firms_in_t)],
+            # firms = [j for j in firms if in(j.ID, firms_in_t)],
             D = D[t_selector, :],
             X = X[t_selector, :],
             Z = Z[t_selector, :],

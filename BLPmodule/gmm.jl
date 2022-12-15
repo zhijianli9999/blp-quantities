@@ -5,6 +5,8 @@ function gmm_lm(
     ec::Economy,
     pars::EconomyPars,
     X::Matrix{Float64}, #df.x1, df.x2
+    Z::Matrix{Float64}, #df.z1, df.z2
+    Φ::Matrix{Float64}, #weights
     tol=1e-8
     )::Float64
 
@@ -15,16 +17,14 @@ function gmm_lm(
 
     δ, _ = compute_deltas(ec, pars, θ2, tol = tol, verbose = false)
     pars.δs = δ
-    # @showln ec.tracts[1].shares
+    invΦ = inv(Φ)
+    ZinvΦZ = Z * invΦ * Z'
+    θ1 = inv(X' * ZinvΦZ * X) * X' * ZinvΦZ * δ
 
-    θ1 = X \ δ
-    # TODO: need Zs
-    # @showln θ1
     ω::Matrix{Float64} = δ .- (X * θ1)
-    obj = reduce(+, (ω .^ 2)) #SSR
+    obj = ω' * ZinvΦZ * ω
 
-    # println("obj = ", obj)
-    return obj
+    return obj[1]
 end
 
 function compute_Dδ(ec::Economy, pars::EconomyPars)
