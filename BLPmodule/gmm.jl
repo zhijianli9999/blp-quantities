@@ -6,22 +6,22 @@ function gmm_lm(
     pars::EconomyPars,
     X::Matrix{Float64}, #df.x1, df.x2
     Z::Matrix{Float64}, #df.z1, df.z2
-    Φ::Matrix{Float64}, #weights
+    Φ::Matrix{Float64}=Matrix{Float64}(undef,(0,0)), #weights
     tol=1e-8
-    )::Float64
+)::Float64
 
-    # println("θ2 = ", θ2)
-    # pars.σ = θ2
-    # @unpack nlcoefs, nI, K, β, δs, σ, v = pars
-    # @showln ec.tracts[1].shares
+    if length(Φ)==0
+        Φ = Z' * Z
+    end
+    println("θ2 = ", θ2)
+    flush(stdout)
 
     δ, _ = compute_deltas(ec, pars, θ2, tol = tol, verbose = false)
     pars.δs = δ
     invΦ = inv(Φ)
     ZinvΦZ = Z * invΦ * Z'
     θ1 = inv(X' * ZinvΦZ * X) * X' * ZinvΦZ * δ
-
-    ω::Matrix{Float64} = δ .- (X * θ1)
+    ω = δ .- (X * θ1)
     obj = ω' * ZinvΦZ * ω
 
     return obj[1]

@@ -31,7 +31,7 @@ end
     K::Int
     nI::Int
     v::Matrix{Float64} #K, nI
-    δs::Matrix{Float64} #n_firms_ec, 1
+    δs::Vector{Float64} #n_firms_ec
 end
 
 # σ #K
