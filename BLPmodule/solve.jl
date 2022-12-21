@@ -3,13 +3,16 @@ function update_q!(t::Tract, δ_vec::Vector{Float64}, prevent_overflow = true)::
     @unpack utils, abδ, inds, M, expu, denom, share_i, shares, q = t
     
     @views utils .= abδ .+ δ_vec[inds]
-    if prevent_overflow 
+
+    if prevent_overflow  
+        #use log trick to prevent numerical overflow, see https://github.com/jeffgortmaker/pyblp/blob/09600d7b58332bfb37d757a607cc11baea5373e7/pyblp/markets/market.py#L364
         util_reduction = max(maximum(utils), 0.)
         utils .-= util_reduction
         scale = exp(-util_reduction)
     else
         scale = 1.
     end
+
     expu .= exp.(utils)
     denom .=  sum(expu, dims=1) .+ scale
     share_i .= expu ./ denom
@@ -89,9 +92,6 @@ function compute_deltas(
     end
     δs .= δ_
     if verbose println("dist = $dist, iterations = $counter") end
-    ec = ec_init
-    pars = pars_init
-    pars.δs = δs
 
     return δs, q_iter
 end;

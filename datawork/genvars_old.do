@@ -13,9 +13,9 @@ bys facid year: egen pop65_j = total(pop65plus_int) //population>65 in tracts ne
 gen ratio_occpop = restot / pop65_j
 sum ratio_occpop, d
 gen aux_highnhratio = ratio_occpop > `r(p95)'
-gen fracpop_inmkt = 0.1
+gen fracpop_inmkt = 0.03
 bys tractid year: egen aux_boosttractpop = max(aux_highnhratio)
-replace fracpop_inmkt = 0.2 if aux_boosttractpop == 1
+replace fracpop_inmkt = 0.06 if aux_boosttractpop == 1
 drop aux_* ratio_occpop
 gen mktpop = fracpop_inmkt * pop65plus_int
 

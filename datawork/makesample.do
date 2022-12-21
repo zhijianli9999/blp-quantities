@@ -30,7 +30,7 @@ use $rdir/analysis.dta, clear
 
 rename (accpt_id latitude longitude) (facid lat lon)
 
-loc xvars dchrppd rnhrppd
+loc xvars dchrppd rnhrppd lpnhrppd cnahrppd 
 loc qvars avg_dailycensus restot paymcare paymcaid
 drop if inlist(., restot) //very few have missing restot so just dropping
 keep facid year state county cz lat lon ///
@@ -81,7 +81,7 @@ foreach yy of loc yrs{
 drop aux
 save $idir/sample_novars, replace
 keep if state=="FL" & year==2017
-save $idir/sample_novars_FL, replace
+save $idir/sample_novars_FL17, replace
 
 
 /* NOTES:

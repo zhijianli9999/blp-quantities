@@ -18,9 +18,8 @@ function gmm_lm(
 
     δ, _ = compute_deltas(ec, pars, θ2, tol = tol, verbose = false)
     pars.δs = δ
-    invΦ = inv(Φ)
-    ZinvΦZ = Z * invΦ * Z'
-    θ1 = inv(X' * ZinvΦZ * X) * X' * ZinvΦZ * δ
+    ZinvΦZ = Z * (Φ \ Z')
+    θ1 = (X' * ZinvΦZ * X) \ X' * ZinvΦZ * δ
     ω = δ .- (X * θ1)
     obj = ω' * ZinvΦZ * ω
 
@@ -118,15 +117,12 @@ function grad_diff(
     ec::Economy,
     pars::EconomyPars,
     X::Matrix{Float64}, #df.x1, df.x2
-    eps = 1e-5
-)
+    eps = 1e-5)
 
     obj = gmm_lm(θ2, deepcopy(ec), deepcopy(pars), X)
     obj1 = gmm_lm(θ2 .+ [eps,0.], deepcopy(ec), deepcopy(pars), X)
     obj2 = gmm_lm(θ2 .+ [0.,eps], deepcopy(ec), deepcopy(pars), X)
     return [obj1-obj, obj2-obj]./eps
 end
-    
-    
 
 

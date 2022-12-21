@@ -98,3 +98,9 @@ function create_indices(tracts, n_firms)
 
     return j_indexer, t_indexer, positionin
 end
+
+
+function mean_inside_share(ec::Economy)
+    # do this with the ec after compute_deltas()
+    return mean([reduce(+,tt.shares) for tt in ec.tracts])
+end
