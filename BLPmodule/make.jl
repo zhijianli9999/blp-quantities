@@ -20,13 +20,11 @@ function make_Economy(
     Threads.@threads for i in 1:n_firms_ec
         j = firm_IDs[i]
         j_selector = j .== firm_IDs_long
-        nt = length(j_selector) #number of tracts served by this firm
         firms[i] = Firm(
             ID = j, 
             q_obs = Q[j_selector][1], 
             X = (X[j_selector, :])[1,:],
-            Z = (Z[j_selector, :])[1,:],
-            D = D[j_selector, :]
+            Z = (Z[j_selector, :])[1,:]
         )
     end
 
@@ -43,16 +41,11 @@ function make_Economy(
             ID = t, 
             M = M[t_selector][1], #market size. can just take the first one since all the same in df.
             inds = [i for i in 1:n_firms_ec if in(firms[i].ID, firms_in_t)], # indices of this tract's firms among all firms
-            # firms = [j for j in firms if in(j.ID, firms_in_t)],
             D = D[t_selector, :],
-            X = X[t_selector, :],
-            Z = Z[t_selector, :],
             q = ones(n_firms, 1), #quantity from this tract to the firms in this tract
             n_firms = n_firms,
-            utils = zeros(n_firms, nI),
-            expu = ones(n_firms, nI),
+            utils_pa = zeros(n_firms, nI),
             denom = ones(1, nI),
-            share_i = ones(n_firms, nI),
             shares = ones(n_firms, 1),
             abδ = zeros(n_firms, nI)
         )
@@ -68,10 +61,11 @@ function make_Economy(
 end
 
 
-function set_Pars(;K::Int, nI::Int, δs::Vector{Float64})
+function set_Pars(;K::Int, nJ::Int, nI::Int=100)
     # K: number of non-linear characteristics
     # nI: number of draws
     v = randn(K, nI) #standard normal
+    δs = ones(nJ)
     return EconomyPars(
             K,
             nI,
@@ -90,13 +84,18 @@ function create_indices(tracts, n_firms)
             push!(t_indexer[ind], tt)
     end
 
-    # positionin[jj,tt] is firm jj's position in tract tt's vectors (e.g. the vector of market shares in tt)
-    positionin = Matrix{Int}(undef, n_firms, length(tracts))
+    # JpositioninT[jj,tt] is firm jj's position in tract tt's vectors (e.g. the vector of market shares in tt)
+    JpositioninT = Matrix{Int}(undef, n_firms, length(tracts))
     for jj in 1:n_firms, tt in t_indexer[jj]
-            positionin[jj,tt] = findall(x->x == jj, j_indexer[tt])[1]
+        JpositioninT[jj,tt] = findall(x->x == jj, j_indexer[tt])[1]
     end
 
-    return j_indexer, t_indexer, positionin
+    TpositioninJ = Matrix{Int}(undef, length(tracts), n_firms)
+    for tt in 1:length(tracts), jj in j_indexer[tt]
+        TpositioninJ[tt,jj] = findall(x->x == tt, t_indexer[jj])[1]
+    end
+
+    return j_indexer, t_indexer, JpositioninT
 end
 
 

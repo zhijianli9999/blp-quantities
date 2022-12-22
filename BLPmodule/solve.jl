@@ -1,22 +1,22 @@
 
 function update_q!(t::Tract, δ_vec::Vector{Float64}, prevent_overflow = true)::Matrix{Float64}
-    @unpack utils, abδ, inds, M, expu, denom, share_i, shares, q = t
+    @unpack abδ, inds, M, denom, shares, q, utils_pa = t
     
-    @views utils .= abδ .+ δ_vec[inds]
+    @views utils_pa .= abδ .+ δ_vec[inds]
 
     if prevent_overflow  
         #use log trick to prevent numerical overflow, see https://github.com/jeffgortmaker/pyblp/blob/09600d7b58332bfb37d757a607cc11baea5373e7/pyblp/markets/market.py#L364
-        util_reduction = max(maximum(utils), 0.)
-        utils .-= util_reduction
+        util_reduction = max(maximum(utils_pa), 0.)
+        utils_pa .-= util_reduction
         scale = exp(-util_reduction)
     else
         scale = 1.
     end
 
-    expu .= exp.(utils)
-    denom .=  sum(expu, dims=1) .+ scale
-    share_i .= expu ./ denom
-    shares .= mean(share_i, dims=2)
+    utils_pa .= exp.(utils_pa)
+    denom .=  sum(utils_pa, dims=1) .+ scale
+    utils_pa .= utils_pa ./ denom
+    shares .= mean(utils_pa, dims=2)
     q .= shares .* M
     
     # if debug
@@ -58,6 +58,7 @@ function compute_deltas(
     σ
     ;
     max_iter = 1000, 
+    d_ind = nothing,
     tol = 1e-6,
     verbose = true
 )::Tuple{Vector{Float64}, Vector{Float64}}
@@ -73,9 +74,11 @@ function compute_deltas(
     
     # set the part of the utilities unrelated to δ, i.e. [D] * [(v .* σ)]
     nlcoefs = v .* σ #K, nI
-
+    if d_ind===nothing
+        d_ind = [1]
+    end
     Threads.@threads for t in tracts
-        t.abδ .= t.D * nlcoefs
+        t.abδ .= t.D[:,d_ind] * nlcoefs
     end
 
     dist = 1

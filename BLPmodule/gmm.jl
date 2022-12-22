@@ -5,9 +5,10 @@ function gmm_lm(
     ec::Economy,
     pars::EconomyPars,
     X::Matrix{Float64}, #df.x1, df.x2
-    Z::Matrix{Float64}, #df.z1, df.z2
+    Z::Matrix{Float64}; #df.z1, df.z2
+    d_ind::Vector{Int}=[1],
     Φ::Matrix{Float64}=Matrix{Float64}(undef,(0,0)), #weights
-    tol=1e-8
+    tol=1e-6
 )::Float64
 
     if length(Φ)==0
@@ -16,7 +17,7 @@ function gmm_lm(
     println("θ2 = ", θ2)
     flush(stdout)
 
-    δ, _ = compute_deltas(ec, pars, θ2, tol = tol, verbose = false)
+    δ, _ = compute_deltas(ec, pars, θ2, d_ind=d_ind, tol=tol, verbose = false)
     pars.δs = δ
     ZinvΦZ = Z * (Φ \ Z')
     θ1 = (X' * ZinvΦZ * X) \ X' * ZinvΦZ * δ

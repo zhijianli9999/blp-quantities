@@ -14,5 +14,4 @@ if ${testmode}==1{
 	gl testtag = "_FL17"
 }
 
-do ${codedir}/datawork/genvars_old.do
-// do ${codedir}/datawork/genvars.do
+do ${codedir}/datawork/genvars.do

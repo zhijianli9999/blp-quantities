@@ -36,67 +36,33 @@ df_with0s = @select(data,
 dropmissing!(df_with0s);
 sort!(df_with0s, :j);
 
-X_configs = [
-    [:dchrppd],
-    [:rnhrppd],
-    [:lpnhrppd],
-    [:cnahrppd],
-    [:rnhrppd, :lpnhrppd, :cnahrppd],
-    [:dchrppd, :rnhrppd],
-]
+xvars = [:dchrppd, :rnhrppd, :lpnhrppd, :cnahrppd]
+qvars = [:restot, :nres_mcare]
+dvars = [:d, :d2, :logd]
 
-Q_configs = [
-    :restot,
-    :nres_mcare
-]
+for qii in eachindex(qvars)
+    qvar = qvars[qii]
+    df = @subset(df_with0s, df_with0s[!,qvar] .> 0.)
 
-D_configs = [
-    [:d],
-    [:logd],
-    [:d, :d2]
-]
+    firm_IDs_long = df.j;
+    tract_IDs_long = df.t;
 
+    Z_config = [:nbr_dchrppd, :nbr_rnhrppd]
+    Z = Matrix(df[!, Z_config])
 
-configstokeep = ["212"] #EDIT THIS
+    M = df.M;
+    nJ = length(unique(firm_IDs_long));
+    nI = 100;
 
-for xi in eachindex(X_configs), 
-    qi in eachindex(Q_configs), 
-    di in eachindex(D_configs)
+    X = Matrix(df[!, xvars])
+    D = Matrix(df[!, dvars])
+    Q = df[!, qvar]
 
-    config_tag = string(xi)*string(qi)*string(di)
-    if config_tag in configstokeep
+    ec = m.make_Economy(
+        firm_IDs_long,
+        tract_IDs_long,
+        X, Z, D, Q, M, nI
+    )
 
-        df = @subset(df_with0s, df_with0s[!, Q_configs[qi]] .> 0)
-        
-        firm_IDs_long = df.j;
-        tract_IDs_long = df.t;
-
-        Z_config = [:nbr_dchrppd, :nbr_rnhrppd]
-        Z = Matrix(df[!, Z_config])
-        
-        M = df.M;
-        nJ = length(unique(firm_IDs_long));
-        nI = 100;
-        
-        println(X_configs[xi], Q_configs[qi], D_configs[di], " is ", config_tag)
-
-        X = Matrix(df[!, X_configs[xi]])
-        D = Matrix(df[!, D_configs[di]])
-        Q = df[!, Q_configs[qi]]
-
-        nD = size(D)[2]
-        σ = ones(nD)
-
-        pars = m.set_Pars(K = nD, nI = nI, δs=ones(nJ));
-        
-        ec = m.make_Economy(
-            firm_IDs_long,
-            tract_IDs_long,
-            X, Z, D, Q, M, nI
-        )
-
-        serialize("$datadir/analysis/pars$config_tag$testmode.jls", pars)
-        serialize("$datadir/analysis/ec$config_tag$testmode.jls", ec)
-    end
+    serialize("$datadir/analysis/ec$qii$testmode.jls", ec)
 end
-

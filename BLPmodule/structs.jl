@@ -4,7 +4,6 @@
     q_obs::Number
     X::Vector{Float64}  #nT,KX
     Z::Vector{Float64}  #nT,KZ
-    D::Matrix{Float64}  #nT,KD
 end
 
 
@@ -13,13 +12,9 @@ end
     M::Float64
     inds::Vector{Int} 
     D::Matrix{Float64}  #n_firms, KD
-    X::Matrix{Float64}  #n_firms, KX
-    Z::Matrix{Float64}  #n_firms, KZ
     n_firms::Int 
-    utils::Matrix{Float64} # n_firms, nI
-    expu::Matrix{Float64}  # n_firms, nI
+    utils_pa::Matrix{Float64} # n_firms, nI #pre-allocated utilities/exp(utilities)/shares of individuals
     denom::Matrix{Float64}  #(1, nI)
-    share_i::Matrix{Float64} #(n_firms, nI)
     shares::Matrix{Float64} #(n_firms, 1)
     abδ::Matrix{Float64} #n_firms, nI
     q::Matrix{Float64}
@@ -33,7 +28,6 @@ end
     δs::Vector{Float64} #n_firms_ec
 end
 
-# σ #K
 
 @with_kw struct Economy
     firms::Vector{Firm}
