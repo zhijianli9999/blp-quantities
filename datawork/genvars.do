@@ -1,5 +1,5 @@
 cap log close 
-log using $datadir/logs/genvars_old.log, replace
+log using $datadir/logs/genvars.log, replace
 
 use $idir/sample_novars${testtag}.dta, clear
 
@@ -43,18 +43,34 @@ restore
 
 
 *****
-// neighbors' staffing as IV
+// IV: neighbors' staffing
 loc xvars dchrppd rnhrppd
+bys tractid year: egen mkt_nj = count(facid)
+
 foreach v of varlist `xvars'{
-	bys tractid year: egen nbr_`v' = total(`v')
-	replace nbr_`v' = nbr_`v' - `v'
+	bys tractid year: egen mktnbr_`v' = total(`v')
+	replace mktnbr_`v' = mktnbr_`v' - `v'
+	replace mktnbr_`v' = mktnbr_`v' / (mkt_nj - 1)
+	bys facid year: egen nbr_`v' = mean(mktnbr_`v)
 }
+
+tempfile aux_facs
+save `aux_facs'
+
+// IV: distance to nearest competitor 
+geonear facid lat lon using `aux_facs', n(facid lat lon) ignoreself nearcount(1)
+drop nid
+rename km_to_nid dist_nbrfac
+
+// IV: number of competitors within distance band
 
 
 gsort tractid year facid
 egen tractyear = group(tractid year)
 
 save $adir/factract${testtag}.dta, replace
+
+
 export delim $adir/factract${testtag}, replace
 
 cap log close

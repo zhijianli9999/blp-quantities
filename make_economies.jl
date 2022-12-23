@@ -30,6 +30,7 @@ df_with0s = @select(data,
     :cnahrppd,
     :nbr_dchrppd,
     :nbr_rnhrppd,
+    :dist_nbrfac
 );
 
 
@@ -37,6 +38,7 @@ dropmissing!(df_with0s);
 sort!(df_with0s, :j);
 
 xvars = [:dchrppd, :rnhrppd, :lpnhrppd, :cnahrppd]
+zvars = [:nbr_dchrppd, :nbr_rnhrppd, :dist_nbrfac]
 qvars = [:restot, :nres_mcare]
 dvars = [:d, :d2, :logd]
 
@@ -47,14 +49,13 @@ for qii in eachindex(qvars)
     firm_IDs_long = df.j;
     tract_IDs_long = df.t;
 
-    Z_config = [:nbr_dchrppd, :nbr_rnhrppd]
-    Z = Matrix(df[!, Z_config])
-
+    
     M = df.M;
     nJ = length(unique(firm_IDs_long));
     nI = 100;
-
+    
     X = Matrix(df[!, xvars])
+    Z = Matrix(df[!, zvars])
     D = Matrix(df[!, dvars])
     Q = df[!, qvar]
 
