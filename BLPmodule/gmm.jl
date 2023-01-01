@@ -4,8 +4,8 @@ function gmm_lm(
     θ2, 
     ec::Economy,
     pars::EconomyPars,
-    X::Matrix{Float64}, #df.x1, df.x2
-    Z::Matrix{Float64}; #df.z1, df.z2
+    X::Matrix{Float64},
+    Z::Matrix{Float64};
     d_ind::Vector{Int}=[1],
     Φ::Matrix{Float64}=Matrix{Float64}(undef,(0,0)), #weights
     tol=1e-6
@@ -14,18 +14,36 @@ function gmm_lm(
     if length(Φ)==0
         Φ = Z' * Z
     end
-    println("θ2 = ", θ2)
-    flush(stdout)
+    # println("θ2 = ", θ2)
+    # flush(stdout)
 
     δ, _ = compute_deltas(ec, pars, θ2, d_ind=d_ind, tol=tol, verbose = false)
     pars.δs = δ
     ZinvΦZ = Z * (Φ \ Z')
-    θ1 = (X' * ZinvΦZ * X) \ X' * ZinvΦZ * δ
+    # θ1 = (X' * ZinvΦZ * X) \ X' * ZinvΦZ * δ
+    θ1 = compute_θ1(δ, X, Z, Φ)
     ω = δ .- (X * θ1)
     obj = ω' * ZinvΦZ * ω
 
     return obj[1]
 end
+
+
+function compute_θ1(
+    δ::Vector{Float64},
+    X::Matrix{Float64}, 
+    Z::Matrix{Float64},
+    Φ::Matrix{Float64}=Matrix{Float64}(undef,(0,0)) #weights
+)
+    if length(Φ)==0
+        Φ = Z' * Z
+    end
+    ZinvΦZ = Z * (Φ \ Z')
+    θ1 = (X' * ZinvΦZ * X) \ X' * ZinvΦZ * δ
+    return θ1
+end
+
+
 
 function compute_Dδ(ec::Economy, pars::EconomyPars)
     # TODO: cleanup and efficiency

@@ -4,14 +4,23 @@ gl idir = "$datadir/intermediate"
 gl adir = "$datadir/analysis"
 gl codedir = "/mnt/staff/zhli/blp-quantities"
 
-//makesample makes samples for both testing and full
+
+*****basically never have to re-run:
+// do ${codedir}/datawork/readtracts.do
+// do ${codedir}/datawork/findnbrs.do
+*****
+
 do ${codedir}/datawork/makesample.do
 
-///// testing
-gl testmode = 0 //edit this
-gl testtag
-if ${testmode}==1{
-	gl testtag = "_FL17"
+
+foreach tt in 1 0{
+	gl testmode = `tt'
+	gl testtag
+	if ${testmode}==1{
+		gl testtag = "_FL17"
+	}
+	do ${codedir}/datawork/genvars.do
 }
 
-do ${codedir}/datawork/genvars.do
+
+do $codedir/datawork/eda.do

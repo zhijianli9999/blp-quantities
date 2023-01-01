@@ -9,6 +9,7 @@ module BLPmodule
     using LinearAlgebra
     using Accessors
     using DebuggingUtilities
+    using NBInclude
 
     include("BLPmodule/structs.jl")
     include("BLPmodule/make.jl")
@@ -16,5 +17,6 @@ module BLPmodule
     include("BLPmodule/gmm.jl")
     include("BLPmodule/nlls.jl")
     include("BLPmodule/elasticity.jl")
+    # @nbinclude("BLPmodule/elasticity.jl")
 end
 

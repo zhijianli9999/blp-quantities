@@ -1,28 +1,7 @@
 cap log close 
 log using $datadir/logs/makesample.log, replace
 
-//in this do file, we make datasets for both testing and full-sample
-//tracts
-use $rdir/TractLocVars.dta, clear
-
-rename (geoid tract_latitude tract_longitude) (tractid lat lon)
-
-//remove duplicate entries for gisjoin
-bys tractid year (gisjoin): keep if _n==_N
-
-keep tractid year state lat lon pop65plus_int poptot_int 
-drop if pop65plus_int==0
-
-
-//coordinates are at the tract-year level
-//save each year in separate file
-levelsof year, loc(yrs)
-foreach yy of loc yrs{
-	savesome if year==`yy' using $idir/tract_`yy', replace
-}
-
-save $idir/tract.dta, replace
-// use $idir/tract.dta, clear //testing
+// generate facility-level variables, merge with tracts
 
 **************************************************
 //facilities
@@ -30,45 +9,82 @@ use $rdir/analysis.dta, clear
 
 rename (accpt_id latitude longitude) (facid lat lon)
 
-loc xvars dchrppd rnhrppd lpnhrppd cnahrppd 
+loc xvars dchrppd rnhrppd lpnhrppd cnahrppd labor_expense
 loc qvars avg_dailycensus restot paymcare paymcaid
 drop if inlist(., restot) //very few have missing restot so just dropping
 keep facid year state county cz lat lon ///
-	occpct totbeds `xvars' `qvars'
+	totbeds `xvars' `qvars'
 	
+
+*****
+//generate facility-level variables
+
+*** fix occpct
+gen occpct = 100 * restot / totbeds
+
+*** medicare residents
+gen nres_mcare = (paymcare / 100) * restot
+
+*** (non-)medicaid residents
+gen nres_mcaid = (paymcaid / 100) * restot
+gen nres_nonmcaid = restot - nres_mcaid
+
+
+loc yvars restot nres_mcare
+
+//winsorize staffing more aggressively
+foreach vv of varlist `xvars'{
+// 	histogram `vv', freq yla(, format(%5.0f))
+// 	graph export "$datadir/temp/hist_`vv'.png", replace
+	winsor2 `vv', cuts(0 97) replace
+// 	histogram `vv', freq yla(, format(%5.0f))
+// 	graph export "$datadir/temp/hist_win_`vv'.png", replace
+}
+
+
+//labor expense per bed
+gen lepb = labor_expense * occpct /100
+
+loc xvars `xvars' lepb
+
+//generate logs of staffing and quantity variables
+foreach vv of varlist `yvars' `xvars'{
+	gen log`vv' = log(`vv')
+	replace log`vv' = log(0.05) if `vv'<0.05
+}
+
+//generate lagged staffing
+foreach vv of varlist `xvars'{
+	bys facid (year): gen `vv'_lag = `vv'[_n-1]
+	bys facid (year): gen log`vv'_lag = log`vv'[_n-1]
+}
+
+// dummy for high labor_expense
+sum labor_expense, d
+gen highle100 = labor_expense > 100
+gen highlep95 = labor_expense > `r(p95)'
+
+
+//generate RN fraction
+gen rn_frac = rnhrppd / dchrppd 
+replace rn_frac = 1 if rn_frac > 1
+
+
 compress
 save $idir/fac.dta, replace
-use  $idir/fac.dta, clear //testing
-
-//keep one observation of coordinates for each facility 
-//take most recent coordinates for geonear
-keep facid year lat lon
-bys facid (year): keep if  _n==_N
-save $idir/facloc.dta, replace
-use $idir/facloc.dta, clear //testing
-
-***************************************
-
-//merge tracts within distance threshold 
-
-levelsof year, loc(yrs)
-foreach yy of loc yrs{
-	use $idir/facloc.dta, clear
-	geonear facid lat lon using $idir/tract_`yy'.dta, n(tractid lat lon) long within(30)
-	rename km_to_tractid dist
-	save "${idir}/geonear_`yy'.dta", replace
-}
+// use  $idir/fac.dta, clear //testing
 
 
 clear
 gen aux=1
-save $idir/sample_novars, replace
-use $idir/facloc.dta, clear
+save $idir/sample_novars.dta, replace
+use $idir/facloc.dta, clear //created in findnbrs.do. just the coords
 
 levelsof year, loc(yrs)
 foreach yy of loc yrs{
+	di "`yy'"
 	use $idir/fac.dta if year==`yy', clear
-	merge 1:m facid using "$idir/geonear_`yy'.dta"
+	merge 1:m facid using "$idir/geonear_`yy'.dta" //created in findnbrs.do
 	keep if _merge==3 // 2 for facilities that don't appear in that year
 	drop _merge
 	merge m:1 tractid using ${idir}/tract_`yy'.dta 
@@ -79,6 +95,7 @@ foreach yy of loc yrs{
 	save $idir/sample_novars, replace
 }
 drop aux
+compress
 save $idir/sample_novars, replace
 keep if state=="FL" & year==2017
 save $idir/sample_novars_FL17, replace

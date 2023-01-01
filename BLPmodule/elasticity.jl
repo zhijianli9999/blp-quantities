@@ -6,7 +6,8 @@ function compute_elasticity(
     mktq::Vector{Matrix{Float64}}, #index with tt,jj
     t_indexer::Vector{Vector{Int64}}, 
     JpositioninT::Matrix{Int64}, #JpositioninT[jj,tt] is jj's position in tt
-    n_firms::Int
+    n_firms::Int,
+    xislogged::Bool = false  #whether X is a logged variable
 )::Vector{Float64}
     # t_indexer and JpositioninT are made with create_indices(tracts, n_firms) in make.jl
 
@@ -14,18 +15,20 @@ function compute_elasticity(
     for jj in 1:n_firms
         η[jj] = reduce(+,[
                         mktq[tt][JpositioninT[jj,tt]] *
-                        (1-share[tt][JpositioninT[jj,tt]]) * 
-                        θ * X[jj]
+                        (1-share[tt][JpositioninT[jj,tt]]) * θ
                     for tt in t_indexer[jj]
                 ]) / 
                 reduce(+,[mktq[tt][JpositioninT[jj,tt]] for tt in t_indexer[jj]])
+    end
+    if !xislogged
+        η .*= X
     end
     return η
 end
 
 
 # For NLLS
-using JuMP 
+# using JuMP 
 
 function compute_elasticity(
     X::Vector{Matrix{Float64}}, 
