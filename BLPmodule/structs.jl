@@ -1,9 +1,10 @@
 
 @with_kw struct Firm
-    ID::String
+    ID::Int
     q_obs::Number
-    X::Vector{Float64}  #nT,KX
-    Z::Vector{Float64}  #nT,KZ
+    X::Vector{Float64}
+    FE::Vector{Int64}
+    Z::Vector{Float64}
 end
 
 

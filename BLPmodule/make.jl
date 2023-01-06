@@ -3,6 +3,7 @@ function make_Economy(
     firm_IDs_long,
     tract_IDs_long::Vector,
     X::Matrix{Float64},
+    FE::Matrix{Int64},
     Z::Matrix{Float64},
     D::Matrix{Float64},
     Q::Vector,
@@ -11,7 +12,7 @@ function make_Economy(
     )
     """Outer constructor that takes in data to create Firm and Tract objects"""
     # initialize vectors of firms 
-    firm_IDs = String.(unique(firm_IDs_long))
+    firm_IDs = unique(firm_IDs_long)
     n_firms_ec = length(firm_IDs)
     firms = Array{Firm}(undef, n_firms_ec)
 
@@ -24,6 +25,7 @@ function make_Economy(
             ID = j, 
             q_obs = Q[j_selector][1], 
             X = (X[j_selector, :])[1,:],
+            FE = (FE[j_selector, :])[1,:],
             Z = (Z[j_selector, :])[1,:]
         )
     end

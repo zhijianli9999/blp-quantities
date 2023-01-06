@@ -10,14 +10,18 @@ use $rdir/analysis.dta, clear
 rename (accpt_id latitude longitude) (facid lat lon)
 
 loc xvars dchrppd rnhrppd lpnhrppd cnahrppd labor_expense
-loc qvars avg_dailycensus restot paymcare paymcaid
+loc qvars restot paymcare paymcaid
 drop if inlist(., restot) //very few have missing restot so just dropping
-keep facid year state county cz lat lon ///
-	totbeds `xvars' `qvars'
-	
+keep facid year state county totbeds lat lon `xvars' `qvars'
 
 *****
 //generate facility-level variables
+
+*** county
+egen statecounty = group(state county)
+
+*** facility-year identifier
+egen facyr = group(facid year)
 
 *** fix occpct
 gen occpct = 100 * restot / totbeds
@@ -42,10 +46,10 @@ foreach vv of varlist `xvars'{
 }
 
 
-//labor expense per bed
-gen lepb = labor_expense * occpct /100
-
-loc xvars `xvars' lepb
+// //labor expense per bed
+// gen lepb = labor_expense * occpct /100
+//
+// loc xvars `xvars' lepb
 
 //generate logs of staffing and quantity variables
 foreach vv of varlist `yvars' `xvars'{
@@ -58,16 +62,16 @@ foreach vv of varlist `xvars'{
 	bys facid (year): gen `vv'_lag = `vv'[_n-1]
 	bys facid (year): gen log`vv'_lag = log`vv'[_n-1]
 }
-
-// dummy for high labor_expense
-sum labor_expense, d
-gen highle100 = labor_expense > 100
-gen highlep95 = labor_expense > `r(p95)'
-
-
-//generate RN fraction
-gen rn_frac = rnhrppd / dchrppd 
-replace rn_frac = 1 if rn_frac > 1
+//
+// // dummy for high labor_expense
+// sum labor_expense, d
+// gen highle100 = labor_expense > 100
+// gen highlep95 = labor_expense > `r(p95)'
+//
+//
+// //generate RN fraction
+// gen rn_frac = rnhrppd / dchrppd 
+// replace rn_frac = 1 if rn_frac > 1
 
 
 compress
@@ -95,6 +99,8 @@ foreach yy of loc yrs{
 	save $idir/sample_novars, replace
 }
 drop aux
+
+
 compress
 save $idir/sample_novars, replace
 keep if state=="FL" & year==2017

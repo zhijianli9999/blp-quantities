@@ -52,6 +52,7 @@ end
 return nothing
 end
 
+
 function compute_deltas(
     ec::Economy,
     pars::EconomyPars,
@@ -59,12 +60,10 @@ function compute_deltas(
     ;
     max_iter = 1000, 
     d_ind = nothing,
-    tol = 1e-6,
+    tol = 1e-5,
     verbose = true
 )::Tuple{Vector{Float64}, Vector{Float64}}
-    ec_init = deepcopy(ec)
-    pars_init = deepcopy(pars)
-    
+
     @unpack tracts, firms, q_obs = ec 
     
     # q_mat is the container matrix for iterated quantities

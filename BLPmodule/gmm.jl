@@ -1,45 +1,45 @@
 
 
+# TODO: hard-coding 5 IVs
+# TODO: hard-coding FE = statecounty, year
+
 function gmm_lm(
     θ2, 
     ec::Economy,
     pars::EconomyPars,
-    X::Matrix{Float64},
-    Z::Matrix{Float64};
+    fac_df::DataFrame;
     d_ind::Vector{Int}=[1],
     Φ::Matrix{Float64}=Matrix{Float64}(undef,(0,0)), #weights
     tol=1e-6
 )::Float64
 
+    Z = Matrix{Float64}(fac_df[:, r"z"])
+    X = Matrix{Float64}(fac_df[:, r"x"])
     if length(Φ)==0
         Φ = Z' * Z
     end
-    # println("θ2 = ", θ2)
-    # flush(stdout)
 
     δ, _ = compute_deltas(ec, pars, θ2, d_ind=d_ind, tol=tol, verbose = false)
     pars.δs = δ
     ZinvΦZ = Z * (Φ \ Z')
-    # θ1 = (X' * ZinvΦZ * X) \ X' * ZinvΦZ * δ
-    θ1 = compute_θ1(δ, X, Z, Φ)
+    θ1 = compute_θ1(δ, fac_df)
     ω = δ .- (X * θ1)
     obj = ω' * ZinvΦZ * ω
-
+    println("Objective function value: ", obj[1])
     return obj[1]
 end
 
 
 function compute_θ1(
     δ::Vector{Float64},
-    X::Matrix{Float64}, 
-    Z::Matrix{Float64},
-    Φ::Matrix{Float64}=Matrix{Float64}(undef,(0,0)) #weights
+    fac_df::DataFrame
 )
-    if length(Φ)==0
-        Φ = Z' * Z
-    end
-    ZinvΦZ = Z * (Φ \ Z')
-    θ1 = (X' * ZinvΦZ * X) \ X' * ZinvΦZ * δ
+    fac_df[:, "deltas"] = δ
+    # regresult = reg(fac_df, @formula(deltas ~ (x1~z1+z2+z3+z4+z5) + fe(fe1)&fe(fe2) + fe(fe3)))
+    regresult = reg(fac_df, @formula(deltas ~ (x1~z1+z2+z3+z4+z5) + fe(fe1) + fe(fe2)))
+    # @showln regresult
+    # flush(stdout)
+    θ1 = coef(regresult)[1]
     return θ1
 end
 

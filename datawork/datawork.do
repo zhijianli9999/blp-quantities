@@ -23,4 +23,4 @@ foreach tt in 1 0{
 }
 
 
-do $codedir/datawork/eda.do
+// do $codedir/datawork/eda.do

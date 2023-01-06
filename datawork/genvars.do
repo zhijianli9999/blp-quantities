@@ -21,6 +21,7 @@ replace fracpop_inmkt = 0.06 if aux_boosttractpop == 1
 drop aux_* ratio_occpop
 gen mktpop = fracpop_inmkt * pop65plus_int
 
+drop pop*_int pop65_j fracpop_inmkt
 *****
 // IV: neighbors' staffing
 loc xvars dchrppd rnhrppd cnahrppd lpnhrppd
@@ -75,8 +76,4 @@ export delim $adir/factract${testtag}, replace
 collapse (first) log*hrppd restot nres_mcare `xvars' competitors_in* nbr* state county,  by(facid year)
 save $adir/facwithvars${testtag}.dta, replace
 
-
 cap log close
-
-
-

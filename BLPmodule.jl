@@ -10,6 +10,7 @@ module BLPmodule
     using Accessors
     using DebuggingUtilities
     using NBInclude
+    using FixedEffectModels
 
     include("BLPmodule/structs.jl")
     include("BLPmodule/make.jl")
