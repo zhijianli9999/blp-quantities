@@ -24,7 +24,8 @@ gen mktpop = fracpop_inmkt * pop65plus_int
 drop pop*_int pop65_j fracpop_inmkt
 *****
 // IV: neighbors' staffing
-loc xvars dchrppd rnhrppd cnahrppd lpnhrppd
+
+loc xvars labor_expense dchrppd rnhrppd cnahrppd lpnhrppd
 bys tractid year: egen mkt_nj = count(facid)
 
 foreach v of varlist `xvars'{
@@ -34,6 +35,7 @@ foreach v of varlist `xvars'{
 	bys facid year: egen nbr_`v' = mean(mktnbr_`v')
 }
 drop mktnbr_* mkt_nj
+compress
 tempfile tmp1
 save `tmp1'
 
@@ -61,19 +63,22 @@ foreach dd of numlist 5 20{
 drop facid2
 
 gsort tractid year facid
-egen tractyear = group(tractid year)
-
-compress 
+egen tractyear = group(tractid year) 
 
 merge 1:1 facid tractid year using `tmp1' 
 drop _merge
 
+drop lat lon 
+
+compress
 save $adir/factract${testtag}.dta, replace
-use  $adir/factract${testtag}.dta, clear //testing
+// use  $adir/factract${testtag}.dta, clear //testing
+
 export delim $adir/factract${testtag}, replace
 
-//save a facility-level dataset for data exploration
-collapse (first) log*hrppd restot nres_mcare `xvars' competitors_in* nbr* state county,  by(facid year)
-save $adir/facwithvars${testtag}.dta, replace
-
+//save facility-level dataset (with IVs) 
+collapse (firstnm) restot nres_mcare nres_nonmcaid labor_expense loglabor_expense competitors_in* dist_nbrfac nbr* state county statecounty,  by(facid year)
+save $adir/fac${testtag}.dta, replace
+export delim $adir/fac${testtag}.csv, replace 
+// use $adir/fac${testtag}.dta, clear
 cap log close

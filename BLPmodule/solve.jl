@@ -59,25 +59,22 @@ function compute_deltas(
     σ
     ;
     max_iter = 1000, 
-    d_ind = nothing,
     tol = 1e-5,
     verbose = true
 )::Tuple{Vector{Float64}, Vector{Float64}}
 
-    @unpack tracts, firms, q_obs = ec 
+    @unpack tracts, q_obs = ec 
     
     # q_mat is the container matrix for iterated quantities
-    q_mat = zeros(length(tracts), length(firms)) # nT by nJ matrix to store iterated quantities
+    q_mat = zeros(length(tracts), length(q_obs)) # nT by nJ matrix to store iterated quantities
     
     @unpack K, nI, v, δs = pars
     
     # set the part of the utilities unrelated to δ, i.e. [D] * [(v .* σ)]
     nlcoefs = v .* σ #K, nI
-    if d_ind===nothing
-        d_ind = [1]
-    end
+
     Threads.@threads for t in tracts
-        t.abδ .= t.D[:,d_ind] * nlcoefs
+        t.abδ .= t.D * nlcoefs
     end
 
     dist = 1

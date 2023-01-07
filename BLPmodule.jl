@@ -14,6 +14,7 @@ module BLPmodule
 
     include("BLPmodule/structs.jl")
     include("BLPmodule/make.jl")
+    include("BLPmodule/make_economies.jl")
     include("BLPmodule/solve.jl")
     include("BLPmodule/gmm.jl")
     include("BLPmodule/nlls.jl")

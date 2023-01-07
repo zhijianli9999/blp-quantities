@@ -1,11 +1,11 @@
 
-@with_kw struct Firm
-    ID::Int
-    q_obs::Number
-    X::Vector{Float64}
-    FE::Vector{Int64}
-    Z::Vector{Float64}
-end
+# @with_kw struct Firm
+#     ID::Int
+#     q_obs::Number
+#     X::Vector{Float64}
+#     FE::Vector{Int64}
+#     Z::Vector{Float64}
+# end
 
 
 @with_kw struct Tract
@@ -23,7 +23,7 @@ end
 
 
 @with_kw mutable struct EconomyPars
-    K::Int
+    K::Int #number of non-linear parametersß
     nI::Int
     v::Matrix{Float64} #K, nI
     δs::Vector{Float64} #n_firms_ec
@@ -31,7 +31,19 @@ end
 
 
 @with_kw struct Economy
-    firms::Vector{Firm}
+    # firms::Vector{Firm}
     tracts::Vector{Tract}
     q_obs::Vector{Float64} #nJ
+end
+
+
+@with_kw mutable struct Vars
+    tvar::Symbol
+    jvar::Symbol
+    xvars::Vector{Symbol}
+    zvars::Vector{Symbol}
+    fevars::Vector{Symbol}
+    qvar::Symbol
+    mvar::Symbol
+    dvars::Vector{Symbol}
 end

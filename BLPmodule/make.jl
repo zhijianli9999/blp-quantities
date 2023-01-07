@@ -1,10 +1,11 @@
 
 function make_Economy(
-    firm_IDs_long,
+    firm_IDs_long::Vector,
+    firm_IDs_unique::Vector,
     tract_IDs_long::Vector,
-    X::Matrix{Float64},
-    FE::Matrix{Int64},
-    Z::Matrix{Float64},
+    # X::Matrix{Float64},
+    # FE::Matrix{Int64},
+    # Z::Matrix{Float64},
     D::Matrix{Float64},
     Q::Vector,
     M::Vector,
@@ -12,27 +13,23 @@ function make_Economy(
     )
     """Outer constructor that takes in data to create Firm and Tract objects"""
     # initialize vectors of firms 
-    firm_IDs = unique(firm_IDs_long)
-    n_firms_ec = length(firm_IDs)
-    firms = Array{Firm}(undef, n_firms_ec)
+    n_firms_ec = length(firm_IDs_unique)
+    # firms = Array{Firm}(undef, n_firms_ec)
 
-    # @unpack K, nI, v, β, σ = pars
-    # create firms 
-    Threads.@threads for i in 1:n_firms_ec
-        j = firm_IDs[i]
-        j_selector = j .== firm_IDs_long
-        firms[i] = Firm(
-            ID = j, 
-            q_obs = Q[j_selector][1], 
-            X = (X[j_selector, :])[1,:],
-            FE = (FE[j_selector, :])[1,:],
-            Z = (Z[j_selector, :])[1,:]
-        )
-    end
+    # # create firms 
+    # Threads.@threads for i in 1:n_firms_ec
+    #     j = firm_IDs_unique[i]
+    #     firms[i] = Firm(
+    #         ID = j, 
+    #         q_obs = Q[i], 
+    #         X = (X[i, :]),
+    #         FE = (FE[i, :]),
+    #         Z = (Z[i, :])
+    #     )
+    # end
 
     # initialize vectors of tracts 
     tract_IDs = unique(tract_IDs_long)
-    n_tracts_ec = length(tract_IDs)
     tracts = Array{Tract}(undef, length(tract_IDs))
     Threads.@threads for i in eachindex(tract_IDs)
         t = tract_IDs[i] #ID of the tract
@@ -42,7 +39,7 @@ function make_Economy(
         tracts[i] = Tract(
             ID = t, 
             M = M[t_selector][1], #market size. can just take the first one since all the same in df.
-            inds = [i for i in 1:n_firms_ec if in(firms[i].ID, firms_in_t)], # indices of this tract's firms among all firms
+            inds = [i for i in 1:n_firms_ec if in(firm_IDs_unique[i], firms_in_t)], # indices of this tract's firms among all firms
             D = D[t_selector, :],
             q = ones(n_firms, 1), #quantity from this tract to the firms in this tract
             n_firms = n_firms,
@@ -53,12 +50,12 @@ function make_Economy(
         )
     end
 
-    println("Economy with ", length(firms), " firms and ", length(tracts), " tracts.")
+    println("Economy with ", n_firms_ec, " firms and ", length(tracts), " tracts.")
     
     return Economy(
-            firms = firms,
+            # firms = firms,
             tracts = tracts,
-            q_obs = [j.q_obs for j in firms]
+            q_obs = Q
         )
 end
 
@@ -104,4 +101,23 @@ end
 function mean_inside_share(ec::Economy)
     # do this with the ec after compute_deltas()
     return mean([reduce(+,tt.shares) for tt in ec.tracts])
+end
+
+function build_formula(vars::Vars)
+    @unpack xvars, zvars, fevars = vars
+    formula = "deltas ~ "
+    @assert length(xvars)==1 "One x variable in the regression please."
+    formula = formula*string(xvars[1])*"~"
+    for zz in zvars
+        formula = formula*string(zz)*"+"
+    end
+
+    for ff in fevars
+        formula = formula*"fe("*string(ff)*")"
+        if ff != fevars[end]
+            formula = formula*"+"
+        end
+    end
+    
+    return @eval(@formula($(Meta.parse(formula))))
 end

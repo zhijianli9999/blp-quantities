@@ -5,17 +5,15 @@ log using $datadir/logs/makesample.log, replace
 
 **************************************************
 //facilities
-use $rdir/analysis.dta, clear
+use $rdir/analysis_wnotforprofit.dta, clear
 
 rename (accpt_id latitude longitude) (facid lat lon)
 
 loc xvars dchrppd rnhrppd lpnhrppd cnahrppd labor_expense
-loc qvars restot paymcare paymcaid
-drop if inlist(., restot) //very few have missing restot so just dropping
-keep facid year state county totbeds lat lon `xvars' `qvars'
+keep facid year state county lat lon `xvars' restot paymcare paymcaid
 
-*****
-//generate facility-level variables
+***
+*generate facility-level variables
 
 *** county
 egen statecounty = group(state county)
@@ -23,8 +21,8 @@ egen statecounty = group(state county)
 *** facility-year identifier
 egen facyr = group(facid year)
 
-*** fix occpct
-gen occpct = 100 * restot / totbeds
+// *** fix occpct
+// gen occpct = 100 * restot / totbeds
 
 *** medicare residents
 gen nres_mcare = (paymcare / 100) * restot
@@ -32,24 +30,16 @@ gen nres_mcare = (paymcare / 100) * restot
 *** (non-)medicaid residents
 gen nres_mcaid = (paymcaid / 100) * restot
 gen nres_nonmcaid = restot - nres_mcaid
+drop nres_mcaid paymcaid paymcare
 
 
-loc yvars restot nres_mcare
+loc yvars restot nres_mcare nres_nonmcaid
 
 //winsorize staffing more aggressively
 foreach vv of varlist `xvars'{
-// 	histogram `vv', freq yla(, format(%5.0f))
-// 	graph export "$datadir/temp/hist_`vv'.png", replace
 	winsor2 `vv', cuts(0 97) replace
-// 	histogram `vv', freq yla(, format(%5.0f))
-// 	graph export "$datadir/temp/hist_win_`vv'.png", replace
 }
 
-
-// //labor expense per bed
-// gen lepb = labor_expense * occpct /100
-//
-// loc xvars `xvars' lepb
 
 //generate logs of staffing and quantity variables
 foreach vv of varlist `yvars' `xvars'{
@@ -57,25 +47,21 @@ foreach vv of varlist `yvars' `xvars'{
 	replace log`vv' = log(0.05) if `vv'<0.05
 }
 
-//generate lagged staffing
-foreach vv of varlist `xvars'{
-	bys facid (year): gen `vv'_lag = `vv'[_n-1]
-	bys facid (year): gen log`vv'_lag = log`vv'[_n-1]
-}
-//
-// // dummy for high labor_expense
-// sum labor_expense, d
-// gen highle100 = labor_expense > 100
-// gen highlep95 = labor_expense > `r(p95)'
-//
-//
-// //generate RN fraction
-// gen rn_frac = rnhrppd / dchrppd 
-// replace rn_frac = 1 if rn_frac > 1
+// //generate lagged staffing
+// foreach vv of varlist `xvars'{
+// 	bys facid (year): gen `vv'_lag = `vv'[_n-1]
+// 	bys facid (year): gen log`vv'_lag = log`vv'[_n-1]
+// }
+
+
+// gsort facid -year
+// bys facid : replace county = county[_n-1] if missing(county)
+
 
 
 compress
-save $idir/fac.dta, replace
+save $idir/fac.dta, replace //facility-year level
+//
 // use  $idir/fac.dta, clear //testing
 
 
@@ -100,9 +86,16 @@ foreach yy of loc yrs{
 }
 drop aux
 
+//log distance
+gen logd = log(dist)
+replace logd = log(0.5) if dist<0.5
 
 compress
 save $idir/sample_novars, replace
+
+keep if state=="FL" 
+save $idir/sample_novars_FL, replace
+
 keep if state=="FL" & year==2017
 save $idir/sample_novars_FL17, replace
 

@@ -10,14 +10,15 @@ gl codedir = "/mnt/staff/zhli/blp-quantities"
 // do ${codedir}/datawork/findnbrs.do
 *****
 
-do ${codedir}/datawork/makesample.do
+// do ${codedir}/datawork/makesample.do
 
-
-foreach tt in 1 0{
-	gl testmode = `tt'
+foreach tt in 2 1 0{
 	gl testtag
-	if ${testmode}==1{
+	if `tt'==1{
 		gl testtag = "_FL17"
+	}
+	if `tt'==2{
+		gl testtag = "_FL"
 	}
 	do ${codedir}/datawork/genvars.do
 }

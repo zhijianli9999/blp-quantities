@@ -4,7 +4,7 @@ log using $datadir/logs/findnbrs.log, replace
 // do the geonear stuff which takes a while to run
 
 //facilities
-use $rdir/analysis.dta, clear
+use $rdir/analysis_wnotforprofit.dta, clear
 
 rename (accpt_id latitude longitude) (facid lat lon)
 

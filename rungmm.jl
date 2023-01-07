@@ -19,7 +19,7 @@ using BLPmodule; const m = BLPmodule;
 
 d_ind = [3] #which distance variable. 1=d, 2=d2, 3=log(d)
 
-testmodes = ["_FL17", ""]
+testmodes = ["_FL17",2 ""]
 testmode = testmodes[2] #1 is testing, 2 is full
 
 suble = false #select only a subset facilities based on (log)labor_expense(_lag)
@@ -70,6 +70,7 @@ share = [tt.shares for tt in ec.tracts];
 mktq = [tt.q for tt in ec.tracts];
 serialize("$datadir/temp/share$configtag.jls", share)
 serialize("$datadir/temp/mktq$configtag.jls", mktq)
+serialize("$datadir/temp/pars$configtag.jls", pars)
 
 δ = pars.δs;
 
