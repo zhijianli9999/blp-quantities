@@ -3,12 +3,11 @@ using DataFrames, DataFramesMeta, LinearAlgebra, Distributions, Revise, Serializ
 string(@__DIR__) in LOAD_PATH || push!(LOAD_PATH, @__DIR__);
 using BLPmodule; const m = BLPmodule;
 
-##
 const datadir = "/export/storage_adgandhi/MiscLi/factract";
 
 testtag = "";
-testtag = "_FL17";
 # testtag = "_FL";
+# testtag = "_FL17";
 
 vars_toload = m.Vars(
     tvar = :tractyear,
@@ -36,47 +35,30 @@ function closure_gmm(θ2)
     return m.gmm_lm(θ2, ec, pars, fac_df, vars_toreg)
 end;
 
-res = optimize(closure_gmm, -2., 8., show_trace = false, abs_tol= 1e-4)
+res = optimize(closure_gmm, -1., 4., show_trace = true, abs_tol= 1e-3)
 
 share = [tt.shares for tt in ec.tracts];
 mktq = [tt.q for tt in ec.tracts];
 δ = pars.δs;
-θ1res = m.compute_θ1(δ, fac_df)
+θ1res = m.compute_θ1(δ, fac_df, vars_toreg)
 n_firms = length(ec.q_obs);
 j_indexer, t_indexer, JpositioninT = m.create_indices(ec.tracts, n_firms);
 
+xvar = vars_toreg.xvars[1] #should only have one 
+x_vals = fac_df[!, xvar]
+xislogged = (minimum(x_vals) < 0.)
+println(string(xvar), xislogged)
+η = m.compute_elasticity(x_vals, θ1res[1], share, mktq, t_indexer, JpositioninT, n_firms, xislogged);
+println("Mean elasticity = ", mean(η))
 
-for ii in eachindex(vars_toreg.xvars)
-    x_vals = fac_df[!, xvars]
-    strii = string(ii)
-    xislogged = (minimum(x_vals) < 0.)
-    η = m.compute_elasticity(x_vals, θ1res[ii], share, mktq, t_indexer, JpositioninT, n_firms, xislogged);
-    println("Mean elasticity = ", mean(η))
-    if testtag==""
-        CSV.write(datadir*"/analysis/elasticities_$strii.csv", DataFrame((facyr = fac_df.j, elast = η)))
-    end
-    describe(η)
+if testtag==""
+    CSV.write(datadir*"/analysis/elasticities"*string(xvar)*".csv", DataFrame((facyr = fac_df.j, elast = η)))
 end
-# 
+describe(η)
+
 
 ######
 
 
-# 
-
-
-
 #TODO: save things
 
-# fevars = [:statecounty, :year]
-# for ii in eachindex(fevars)
-#     rename!(fac_df, fevars[ii] => "fe$ii")
-# end
-
-
-# fac_path = datadir*"/analysis/fac"*testtag*".csv"
-# fac = DataFrame(CSV.File(fac_path));
-# names(fac)
-
-# xvars = [:labor_expense, :loglabor_expense]
-# dropmissing!(fac, cat(xvars, qvar, dims = 1));

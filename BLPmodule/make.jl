@@ -3,30 +3,14 @@ function make_Economy(
     firm_IDs_long::Vector,
     firm_IDs_unique::Vector,
     tract_IDs_long::Vector,
-    # X::Matrix{Float64},
-    # FE::Matrix{Int64},
-    # Z::Matrix{Float64},
     D::Matrix{Float64},
     Q::Vector,
     M::Vector,
     nI::Int
     )
-    """Outer constructor that takes in data to create Firm and Tract objects"""
-    # initialize vectors of firms 
-    n_firms_ec = length(firm_IDs_unique)
-    # firms = Array{Firm}(undef, n_firms_ec)
+    """Outer constructor that takes in data to create Tract objects"""
 
-    # # create firms 
-    # Threads.@threads for i in 1:n_firms_ec
-    #     j = firm_IDs_unique[i]
-    #     firms[i] = Firm(
-    #         ID = j, 
-    #         q_obs = Q[i], 
-    #         X = (X[i, :]),
-    #         FE = (FE[i, :]),
-    #         Z = (Z[i, :])
-    #     )
-    # end
+    n_firms_ec = length(firm_IDs_unique)
 
     # initialize vectors of tracts 
     tract_IDs = unique(tract_IDs_long)
@@ -53,7 +37,6 @@ function make_Economy(
     println("Economy with ", n_firms_ec, " firms and ", length(tracts), " tracts.")
     
     return Economy(
-            # firms = firms,
             tracts = tracts,
             q_obs = Q
         )
@@ -101,23 +84,4 @@ end
 function mean_inside_share(ec::Economy)
     # do this with the ec after compute_deltas()
     return mean([reduce(+,tt.shares) for tt in ec.tracts])
-end
-
-function build_formula(vars::Vars)
-    @unpack xvars, zvars, fevars = vars
-    formula = "deltas ~ "
-    @assert length(xvars)==1 "One x variable in the regression please."
-    formula = formula*string(xvars[1])*"~"
-    for zz in zvars
-        formula = formula*string(zz)*"+"
-    end
-
-    for ff in fevars
-        formula = formula*"fe("*string(ff)*")"
-        if ff != fevars[end]
-            formula = formula*"+"
-        end
-    end
-    
-    return @eval(@formula($(Meta.parse(formula))))
 end

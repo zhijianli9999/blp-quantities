@@ -1,13 +1,4 @@
 
-# @with_kw struct Firm
-#     ID::Int
-#     q_obs::Number
-#     X::Vector{Float64}
-#     FE::Vector{Int64}
-#     Z::Vector{Float64}
-# end
-
-
 @with_kw struct Tract
     ID::Int
     M::Float64

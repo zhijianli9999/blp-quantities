@@ -1,4 +1,15 @@
 
+
+function build_formula(vars::Vars)
+    # helper function to write a formula for GMM from variables
+    @unpack xvars, zvars, fevars = vars
+    @assert length(xvars)==1 "One x variable in the regression please."
+    formula = Term(:deltas) ~ (Term(xvars[1]) ~ sum(Term.(zvars))) + sum(fe.(Term.(fevars)))
+
+    return formula
+end
+
+
 function gmm_lm(
     θ2, 
     ec::Economy,
@@ -34,8 +45,8 @@ function compute_θ1(
 )
     fac_df[:, "deltas"] = δ
     regresult = reg(fac_df, build_formula(vars))
-    # @showln regresult
-    # flush(stdout)
+    @showln regresult
+    flush(stdout)
     θ1 = coef(regresult)[1]
     return θ1
 end
