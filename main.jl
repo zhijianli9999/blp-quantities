@@ -5,8 +5,8 @@ using BLPmodule; const m = BLPmodule;
 
 const datadir = "/export/storage_adgandhi/MiscLi/factract";
 
-# testtag = "";
-testtag = "_FL";
+testtag = "";
+# testtag = "_FL";
 # testtag = "_FL17";
 
 vars_toload = m.Vars(
@@ -30,9 +30,7 @@ pars = m.set_Pars(K = 1, nJ=length(ec.q_obs));
 
 vars_toreg = deepcopy(vars_toload);
 vars_toreg.xvars = [:labor_expense];
-######
-######
-######
+
 function closure_gmm(θ2)
     return m.gmm_lm(θ2, ec, pars, fac_df, vars_toreg)
 end;
@@ -57,11 +55,6 @@ if testtag==""
     CSV.write(datadir*"/analysis/elasticities"*string(xvar)*".csv", DataFrame((facyr = fac_df.j, elast = η)))
 end
 describe(η)
-
-serialize("$datadir/temp/share.jls", share)
-serialize("$datadir/temp/mktq.jls", mktq)
-serialize("$datadir/temp/theta1.jls", θ1res)
-serialize("$datadir/temp/pars.jls", pars)
 
 
 ######
