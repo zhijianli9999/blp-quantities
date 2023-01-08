@@ -45,52 +45,53 @@ function update_market!(
     δ_vec::Vector{Float64},
     q_mat::Matrix{Float64}
 )
-Threads.@threads for tt in eachindex(tracts)
-# for tt in eachindex(tracts)
-    @views q_mat[tt, tracts[tt].inds] = update_q!(tracts[tt], δ_vec)
-end
-return nothing
+    Threads.@threads for tt in eachindex(tracts)
+        @views q_mat[tt, tracts[tt].inds] = update_q!(tracts[tt], δ_vec)
+    end
+    return nothing
 end
 
 
 function compute_deltas(
     ec::Economy,
     pars::EconomyPars,
-    σ
-    ;
+    σ;
     max_iter = 1000, 
     tol = 1e-5,
     verbose = true
 )::Tuple{Vector{Float64}, Vector{Float64}}
 
-    @unpack tracts, q_obs = ec 
-    
-    # q_mat is the container matrix for iterated quantities
-    q_mat = zeros(length(tracts), length(q_obs)) # nT by nJ matrix to store iterated quantities
-    
     @unpack K, nI, v, δs = pars
-    
-    # set the part of the utilities unrelated to δ, i.e. [D] * [(v .* σ)]
-    nlcoefs = v .* σ #K, nI
+    for yy in eachindex(ec.years)
+        @unpack tracts, q_obs, q_mat = yy 
+        
+        # set the part of the utilities unrelated to δ, i.e. [D] * [(v .* σ)]
+        nlcoefs = v .* σ #K, nI
+        
+        # q_mat is the container matrix for iterated quantities
+        q_mat = zeros(length(tracts), length(q_obs))
 
-    Threads.@threads for t in tracts
-        t.abδ .= t.D * nlcoefs
+        Threads.@threads for t in tracts
+            t.abδ .= t.D * nlcoefs
+        end
+
+        dist = 1.
+        counter = 0
+        δ_ = deepcopy(δs) #initial
+        q_iter = zeros(length(δs))
+        while (dist > tol && counter <= max_iter)
+            update_market!(tracts, δ_, q_mat)
+            q_iter = sum(q_mat, dims=1)[1,:] # Sum across markets to aggregate quantities
+            δs .= δ_ .+ log.(q_obs ./ q_iter)
+            dist = maximum(abs.(δs - δ_))
+            δ_ .= δs
+            counter += 1
+            if counter==max_iter
+                println("Max iterations reached in compute_deltas(): ", max_iter)
+            end
+        end
+        δs .= δ_
+        if verbose println("dist = $dist, iterations = $counter") end
     end
-
-    dist = 1
-    counter = 0
-    δ_ = deepcopy(δs) #initial
-    q_iter = zeros(length(δs))
-    while (dist > tol && counter <= max_iter)
-        update_market!(tracts, δ_, q_mat)
-        q_iter = sum(q_mat, dims=1)[1,:] # Sum across markets to aggregate quantities
-        δs .= δ_ .+ log.(q_obs ./ q_iter)
-        dist = maximum(abs.(δs - δ_))
-        δ_ .= δs
-        counter += 1
-    end
-    δs .= δ_
-    if verbose println("dist = $dist, iterations = $counter") end
-
     return δs, q_iter
 end;

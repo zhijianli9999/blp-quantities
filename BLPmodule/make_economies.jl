@@ -21,8 +21,9 @@ rename!(factract,
     jvar => :j, 
     mvar => :m)
 
-sort!(factract, :j);
+sort!(factract, [:year, :j]);
 
+years_long = factract.year;
 firm_IDs_long = factract.j;
 firm_IDs_unique = unique(factract.j);
 tract_IDs_long = factract.t;
@@ -35,29 +36,16 @@ fac_df = DataFrame(CSV.File(fac_path));
 rename!(fac_df, jvar => :j)
 dropmissing!(fac_df, cat(xvars, zvars, fevars, qvar, dims=1))
 @subset!(fac_df, fac_df[!,qvar] .> 0.)
-
-sort!(fac_df, :j);
-
+sort!(fac_df, [:year, :j]);
 rename!(fac_df, qvar => "q")
 
-
-
-# X = Matrix(fac_df[!, xvars])
-# Z = Matrix(fac_df[!, zvars])
-# FE = Matrix(fac_df[!, fevars])
 Q = fac_df[!, :q]
-
-# ec = make_Economy(
-#     firm_IDs_long,
-#     firm_IDs_unique,
-#     tract_IDs_long,
-#     X, FE, Z, D, Q, M, nI
-# )
 
 ec = make_Economy(
     firm_IDs_long,
     firm_IDs_unique,
     tract_IDs_long,
+    years_long,
     D, Q, M, nI
 )
 
